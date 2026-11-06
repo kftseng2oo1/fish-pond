@@ -1902,14 +1902,21 @@ function animate(){
    raft.rotation.y=HV.on?0.15:Math.atan2(-(nz-z),nx-x);
    raft.rotation.z=0.02*Math.sin(T*1.3);raft.rotation.x=0.02*Math.sin(T*1.1);
    P.root.rotation.y=angLerp(P.root.rotation.y,rs.phase?-Math.PI/2:0,Math.min(1,dt*3));
+   P.root.position.z=lerp(P.root.position.z,rs.phase?-0.05:0.4,Math.min(1,dt*2));  // 撐篙時站到竹筏右側邊緣
    const sp=Math.sin(T*1.3);let pose;
    if(rs.phase==='throw'){const prev=rs.cyc;rs.cyc=(rs.cyc+dt/1.7)%1;pose=samplePose(THROW_KEYS,rs.cyc);if(prev<0.66&&rs.cyc>=0.66)releaseFeed();}
    else if(rs.phase)pose=STAND_POSE;else pose=polePose(sp);
    P.scoop.visible=rs.phase==='throw';
    applyPose(P,pose,Math.min(1,dt*(rs.phase==='throw'?14:5)));
    raft.updateMatrixWorld(true);
-   if(!rs.phase){P.J.hand[0].getWorldPosition(_a);_b.set(-1.0-0.7*sp,-1.6,0.85).applyMatrix4(raft.matrixWorld);}
-   else{_a.set(-0.7,0.17,-0.74).applyMatrix4(raft.matrixWorld);_b.set(2,0.17,-0.74).applyMatrix4(raft.matrixWorld);}
+   if(!rs.phase){P.J.hand[0].getWorldPosition(_a);
+     // 篙插在竹筏外側的池底，竹筏往前走時篙留在原地，往後斜到一定程度就拔起來往前重插
+     if(!rs.plant){rs.plant=new V3();rs.poleB=new V3();rs.needPlant=true;}
+     _b.copy(rs.plant);raft.worldToLocal(_b);
+     if(rs.needPlant||_b.x<-1.9||_b.length()>3.6){rs.plant.set(0.8,0,2.25).applyMatrix4(raft.matrixWorld);rs.plant.y=terrainH(rs.plant.x,rs.plant.z)+0.05;
+       if(rs.needPlant){rs.poleB.copy(rs.plant);rs.needPlant=false;}else splashRing(rs.plant.x,rs.plant.z,6,0.5);}
+     rs.poleB.lerp(rs.plant,Math.min(1,dt*5));_b.copy(rs.poleB);}
+   else{rs.needPlant=true;_a.set(-0.7,0.17,-0.74).applyMatrix4(raft.matrixWorld);_b.set(2,0.17,-0.74).applyMatrix4(raft.matrixWorld);}
    pole.position.copy(_a);pole.lookAt(_b);pole.visible=!HV.on;
   }
   const raftP=raft.position;
