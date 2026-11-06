@@ -396,7 +396,7 @@ function makePool(n,color,size,opacity){
     spawn(x,y,z,vx,vy,vz,l,s=0){const k=this.i;this.i=(k+1)%n;const j=k*3;pos[j]=x;pos[j+1]=y;pos[j+2]=z;this.vel[j]=vx;this.vel[j+1]=vy;this.vel[j+2]=vz;this.life[k]=l;this.st[k]=s;return k;},
     kill(k){this.life[k]=0;pos[k*3+1]=-9999;}};
 }
-const splash=makePool(1400,0xffffff,0.2,0.85);
+const splash=makePool(3200,0xffffff,0.24,0.85);
 const pelletsF=makePool(500,0xa8763c,0.17,1);   // 虱目魚浮性飼料
 const pelletsS=makePool(400,0x4a3220,0.1,1);    // 草蝦沉性飼料
 const bubbles=makePool(300,0xe4fbff,0.08,0.75);
@@ -1858,10 +1858,17 @@ function animate(){
     a.g.position.y=0.03*Math.sin(T*3+a.i);
     if(aerF>0.3){
       const c=Math.cos(a.g.rotation.y),s=Math.sin(a.g.rotation.y);
-      const n=Math.random()<aerF*0.9?6:0;
-      for(let k=0;k<n;k++){const lx=(Math.random()<0.5?1:-1)*rand(0.82,1.18),lz=rand(-0.6,-0.3);
-        const vx=rand(-0.4,0.4),vz=-rand(1.8,3.6);
-        splash.spawn(a.x+lx*c+lz*s,0.05,a.z-lx*s+lz*c,vx*c+vz*s,rand(1.5,3.2),-vx*s+vz*c,1.2);}
+      // 葉輪從水裡往上翻起，把水甩向上方和後方
+      a.acc=(a.acc||0)+dt*aerF*(quality==='high'?460:240);const n=Math.min(40,Math.floor(a.acc)),w=9*aerF*0.56;a.acc-=n;
+      for(let k=0;k<n;k++){const lx=(Math.random()<0.5?1:-1)*rand(0.82,1.18);
+        const an=Math.random()<0.8?rand(-0.45,0.55):rand(0.55,1.1);
+        const lz=-0.56*Math.cos(an),ly=Math.max(0.03,0.3+0.56*Math.sin(an));
+        const tg=w*rand(0.75,1.1),rd=rand(0.6,1.8);
+        const vzL=tg*Math.sin(an)-rd*Math.cos(an),vy=tg*Math.cos(an)+rd*Math.sin(an),vx=rand(-0.35,0.35);
+        splash.spawn(a.x+lx*c+lz*s,ly,a.z-lx*s+lz*c,vx*c+vzL*s,vy,-vx*s+vzL*c,1.6);}
+      // 貼近水面往後噴的細水花
+      if(Math.random()<aerF)for(let k=0;k<2;k++){const lx=(Math.random()<0.5?1:-1)*rand(0.82,1.18),vz=-rand(2,3.6),vx=rand(-0.4,0.4);
+        splash.spawn(a.x+lx*c-0.5*s,0.05,a.z-lx*s-0.5*c,vx*c+vz*s,rand(0.8,1.8),-vx*s+vz*c,1);}
       if(Math.random()<dt*8*aerF){const lx=rand(-1.4,1.4),lz=-rand(1,2);foam.spawn(a.x+lx*c+lz*s,0.06,a.z-lx*s+lz*c,-s*1.2,0,-c*1.2,rand(18,28));}
     }
   }
