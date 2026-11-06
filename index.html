@@ -84,6 +84,8 @@ html,body{margin:0;height:100%;overflow:hidden;background:#cfe2ee;font-family:-a
 #flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:30}
 .srow{display:grid;grid-template-columns:1fr 40px 76px 40px;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid #e3ebe7}
 .srow .nm{font-weight:700;font-size:14.5px}
+.srow .nm small{display:block;font-size:11.5px;font-weight:400;color:#5b736c;margin-top:1px}
+#realTxt{background:#eef5f1;border-radius:10px;padding:8px 10px}
 .srow b{text-align:center;font-variant-numeric:tabular-nums}
 .srow button{height:36px;border:0;border-radius:10px;background:#e2f0e9;font-size:18px;font-weight:700;color:#13261f}
 .srow button:disabled{opacity:.35}
@@ -213,7 +215,8 @@ body.cctv #hvBar{bottom:calc(128px + env(safe-area-inset-bottom))}
 <div id="shot" class="modal hide"><div class="sheet card"><img id="shotImg" alt="魚塭照片"><div class="tip">iPhone 也可以長按照片儲存</div><div class="row2"><button id="shotSave">📤 分享／儲存</button><button id="shotX" class="gray">關閉</button></div></div></div>
 <div id="flash"></div>
 <div id="stock" class="modal hide"><div class="sheet card"><h3>放養數量</h3><div id="stockRows"></div><div id="loadTxt" class="tip"></div>
-  <div class="tip">畫面上的魚蝦貝都放大了，數量只是示意比例。放得越多，池水溶氧越低（左上角可看）。</div><button class="done" id="stockDone">完成</button></div></div>
+  <div id="realTxt" class="tip"></div>
+  <div class="tip">畫面上 1 尾虱目魚約代表實際 350 尾；草蝦、文蛤的數量各場差異大，畫面上只是示意。放得越多，池水溶氧越低（左上角可看）。</div><button class="done" id="stockDone">完成</button></div></div>
 <div id="guide" class="modal hide"><div class="sheet card guide"><h3>📋 虱目魚・草蝦・文蛤混養須知</h3>
   <h4>分層分工</h4><ul><li>虱目魚在中上層活動，吃浮性飼料和池中藻類。</li><li>草蝦在池底爬行，吃沉性飼料和殘餌，白天多躲著，晚上較活躍。</li><li>文蛤埋在底泥裡濾食浮游藻類，有助穩定水色。</li></ul>
   <h4>鹽度</h4><ul><li>虱目魚是廣鹽性魚，淡水到海水都能活；草蝦、文蛤偏好半鹹水。</li><li>用海水閘門和淡水抽水慢慢調整，避免一次變動太大。</li><li>大雨、颱風後鹽度會突然下降，要特別留意。</li></ul>
@@ -1217,10 +1220,13 @@ const STOCK={
 function saveCounts(){try{localStorage.setItem('pond_counts',JSON.stringify({milkfish:fishes.length,shrimp:shrimps.length,clam:clams.count}));}catch(e){}}
 function renderStock(){
   $('#stockRows').innerHTML=Object.keys(STOCK).map(k=>{const s=STOCK[k],n=s.get();
-    return `<div class="srow"><span class="nm">${s.n}</span><button data-k="${k}" data-d="-1" ${n?'':'disabled'}>－</button><b>${n} ${s.unit}</b><button data-k="${k}" data-d="1" ${n>=s.max?'disabled':''}>＋</button></div>`;}).join('');
+    const real=k==='milkfish'?`<small>≈ 實際 ${(n*350/10000).toFixed(1)} 萬尾／公頃</small>`:'';
+    return `<div class="srow"><span class="nm">${s.n}${real}</span><button data-k="${k}" data-d="-1" ${n?'':'disabled'}>－</button><b>${n} ${s.unit}</b><button data-k="${k}" data-d="1" ${n>=s.max?'disabled':''}>＋</button></div>`;}).join('');
   const load=fishes.length/72*0.6+shrimps.length/42*0.3+clams.count/700*0.1;
   const lp=$('#loadTxt');lp.textContent=load<0.8?'放養偏少，水質很穩':load<1.25?'放養適中':load<1.8?'放養偏多：溶氧會變低，水車要常開':'放養過多：夜間很容易缺氧浮頭';
-  lp.className='tip'+(load>=1.8?' warn':'');}
+  lp.className='tip'+(load>=1.8?' warn':'');
+  const w=fishes.length*350/10000,rt=$('#realTxt');
+  rt.innerHTML=`🐟 換算實際密度：每公頃約 <b>${w.toFixed(1)} 萬尾</b>虱目魚 · `+(w===0?'池子是空的':w<=1.2?'屬於淺坪式（傳統）範圍：1～1.2 萬尾':w<2?'介於淺坪式和深水式之間':w<=5?'屬於深水式範圍：2～5 萬尾（需要水車）':'超過一般深水式的 5 萬尾，風險很高');}
 $('#stockRows').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const s=STOCK[b.dataset.k],d=+b.dataset.d;
   s.set(clamp(s.get()+d*s.step,0,s.max));saveCounts();renderStock();});
 $('#bStock').onclick=()=>{if(HV.on){toast('收成中，等收完再調整');return;}renderStock();openModal('stock');};
