@@ -452,38 +452,70 @@ for(let i=0;i<Math.min(COUNTS.milkfish,180);i++)addFish();
 
 /* ---------- 草蝦 ---------- */
 function shrimpGeo(){
-  const ps=[],S=new THREE.SphereGeometry(0.5,10,7);
+  // 每個部件標記：aLeg = -1 身體；0~9 步足（依序擺動）；10~14 腹肢（游泳足）；20+ 觸角
+  const items=[],S=new THREE.SphereGeometry(0.5,10,7);
+  const add=(g,leg=-1,pv=[0,0,0])=>items.push({g,leg,pv});
   const dark=0x343e3b,band=0xd6bf72,head=0x3d4b46,leg=0xb07a3c;
-  ps.push(part(S,head,M(0.14,0.035,0,0,0,-0.08,0.21,0.085,0.08)));
+  add(part(S,head,M(0.14,0.035,0,0,0,-0.08,0.21,0.085,0.08)));
   for(let i=0;i<6;i++){
     const x=0.02-i*0.055,y=0.03-i*i*0.004,s=1-i*0.1;
-    ps.push(part(S,dark,M(x,y,0,0,0,0.1*i,0.075,0.075*s,0.07*s)));
-    ps.push(part(S,band,M(x-0.027,y+0.003,0,0,0,0.1*i,0.014,0.079*s,0.074*s)));
+    add(part(S,dark,M(x,y,0,0,0,0.1*i,0.075,0.075*s,0.07*s)));
+    add(part(S,band,M(x-0.027,y+0.003,0,0,0,0.1*i,0.014,0.079*s,0.074*s)));
   }
   const tf=new THREE.Shape();tf.moveTo(0,0);tf.lineTo(-0.12,0.055);tf.lineTo(-0.15,0);tf.lineTo(-0.12,-0.055);tf.lineTo(0,0);
   const tfg=new THREE.ShapeGeometry(tf);
-  ps.push(part(tfg,0x4f5a52,M(-0.285,-0.07,0,Math.PI/2,0,0)));
-  ps.push(part(tfg,0x4f5a52,M(-0.285,-0.07,0,-Math.PI/2,0,0)));
-  ps.push(part(new THREE.ConeGeometry(0.012,0.14,5),dark,M(0.32,0.05,0,0,0,-Math.PI/2)));
+  add(part(tfg,0x4f5a52,M(-0.285,-0.07,0,Math.PI/2,0,0)));
+  add(part(tfg,0x4f5a52,M(-0.285,-0.07,0,-Math.PI/2,0,0)));
+  add(part(new THREE.ConeGeometry(0.012,0.14,5),dark,M(0.32,0.05,0,0,0,-Math.PI/2)));
   const E=new THREE.SphereGeometry(0.02,6,5);
-  ps.push(part(E,0x111111,M(0.27,0.065,0.038)));ps.push(part(E,0x111111,M(0.27,0.065,-0.038)));
+  add(part(E,0x111111,M(0.27,0.065,0.038)));add(part(E,0x111111,M(0.27,0.065,-0.038)));
   for(const sd of [1,-1]){
-    ps.push(cyl([0.28,0.05,0.03*sd],[0.05,0.14,0.12*sd],0.004,0x7a5a3a,4));
-    ps.push(cyl([0.05,0.14,0.12*sd],[-0.25,0.16,0.2*sd],0.003,0x7a5a3a,4));
-    for(let k=0;k<5;k++){const x=0.18-k*0.04;ps.push(cyl([x,0,0.03*sd],[x+0.02,-0.08,0.085*sd],0.006,leg,4));}
+    // 觸角：從頭部根部擺動
+    add(cyl([0.28,0.05,0.03*sd],[0.05,0.14,0.12*sd],0.004,0x7a5a3a,4),20+(sd>0?0:1),[0.28,0.05,0.03*sd]);
+    add(cyl([0.05,0.14,0.12*sd],[-0.25,0.16,0.2*sd],0.003,0x7a5a3a,4),20+(sd>0?0:1),[0.28,0.05,0.03*sd]);
+    // 步足五對：兩節，從根部擺動；左右相位錯開
+    for(let k=0;k<5;k++){const x=0.18-k*0.04,ph=k+(sd>0?0:3.49);
+      add(cyl([x,0.005,0.03*sd],[x+0.025,-0.045,0.07*sd],0.007,leg,4),ph,[x,0.005,0.03*sd]);
+      add(cyl([x+0.025,-0.045,0.07*sd],[x+0.02,-0.082,0.088*sd],0.005,leg,4),ph,[x,0.005,0.03*sd]);}
+    // 腹肢（游泳足）五對，在腹部下方
+    for(let j=0;j<5;j++){const x=0.0-j*0.055,y=0.03-j*j*0.004-0.045;
+      add(cyl([x,y,0.025*sd],[x-0.02,y-0.045,0.035*sd],0.006,0xc79a5c,4),10+j,[x,y,0.025*sd]);}
   }
-  return merge(ps);
+  const g=merge(items.map(it=>it.g));
+  const n=g.attributes.position.count,aLeg=new Float32Array(n),aPv=new Float32Array(n*3);let o=0;
+  for(const it of items){const c=it.g.attributes.position.count;for(let i=0;i<c;i++){aLeg[o+i]=it.leg;aPv.set(it.pv,(o+i)*3);}o+=c;}
+  g.setAttribute('aLeg',new THREE.BufferAttribute(aLeg,1));g.setAttribute('aPivot',new THREE.BufferAttribute(aPv,3));
+  return g;
 }
-const shrimpG=shrimpGeo(),shrimpMat=vcMat({shininess:60,specular:0x888888});
+const shrimpG=shrimpGeo();
+function makeShrimpMat(){
+  const m=vcMat({shininess:60,specular:0x888888});
+  const u={uPh:{value:rand(0,6)},uAmp:{value:0.15},uPl:{value:rand(0,6)},uPlA:{value:0.35},uAnt:{value:rand(0,6)}};
+  m.userData.u=u;
+  m.onBeforeCompile=sh=>{Object.assign(sh.uniforms,u);
+    sh.vertexShader='attribute float aLeg;\nattribute vec3 aPivot;\nuniform float uPh;\nuniform float uAmp;\nuniform float uPl;\nuniform float uPlA;\nuniform float uAnt;\n'+
+      sh.vertexShader.replace('#include <begin_vertex>',`#include <begin_vertex>
+  if(aLeg>=0.0){
+    float ang=0.0;
+    if(aLeg<10.0) ang=uAmp*sin(uPh-aLeg*0.9);
+    else if(aLeg<20.0) ang=uPlA*sin(uPl-(aLeg-10.0)*1.1);
+    else ang=0.14*sin(uAnt+(aLeg-20.0)*1.7);
+    vec3 d=transformed-aPivot;float c=cos(ang),s=sin(ang);
+    if(aLeg>=20.0) transformed=aPivot+vec3(d.x*c-d.z*s,d.y,d.x*s+d.z*c);
+    else transformed=aPivot+vec3(d.x*c-d.y*s,d.x*s+d.y*c,d.z);
+  }`);};
+  m.customProgramCacheKey=()=>'shrimp-legs-v1';
+  return m;
+}
 const shrimps=[];
 function addShrimp(grow=1){
-  const m=new THREE.Mesh(shrimpG,shrimpMat);m.rotation.order='YZX';
+  const m=new THREE.Mesh(shrimpG,makeShrimpMat());m.rotation.order='YZX';
   const s0=rand(1.25,1.55),s=s0*grow;m.scale.setScalar(s);
   const x=rand(-42,42),z=rand(-42,42);
-  const sh={m,s,s0,grow,pos:new V3(x,0,z),t:new V3(x,0,z),timer:0,flick:0,yaw:rand(0,6),vel:new V3()};
+  const sh={m,s,s0,grow,px:x,pz:z,pos:new V3(x,0,z),t:new V3(x,0,z),timer:0,flick:0,yaw:rand(0,6),vel:new V3()};
   m.userData={key:'shrimp',movable:true};scene.add(m);shrimps.push(sh);
 }
-function removeShrimp(){const sh=shrimps.pop();if(!sh)return;scene.remove(sh.m);if(follow===sh.m)follow=null;}
+function removeShrimp(){const sh=shrimps.pop();if(!sh)return;scene.remove(sh.m);sh.m.material.dispose();if(follow===sh.m)follow=null;}
 for(let i=0;i<Math.min(COUNTS.shrimp,120);i++)addShrimp();
 
 /* ---------- 蛤蠣（文蛤） ---------- */
@@ -1979,6 +2011,12 @@ function animate(){
     else{_q.set(s.t.x-s.pos.x,0,s.t.z-s.pos.z);const d=_q.length();
       if(d>0.3){s.yaw=angLerp(s.yaw,Math.atan2(-_q.z,_q.x),Math.min(1,dt*2));s.pos.x+=Math.cos(s.yaw)*speed*dt;s.pos.z-=Math.sin(s.yaw)*speed*dt;}}
     {const sl=HV.on?47.8:44;s.pos.x=clamp(s.pos.x,-sl,sl);s.pos.z=clamp(s.pos.z,-sl,sl);}hvConstrain(s.pos);
+    // 腳隨移動速度擺動：步足走得越快擺得越快越大，彈跳時腹肢猛划
+    {const mv=Math.hypot(s.pos.x-s.px,s.pos.z-s.pz)/Math.max(dt,1e-4);s.px=s.pos.x;s.pz=s.pos.z;
+     const u=s.m.material.userData.u,wv=s.flick>0?0:Math.min(mv,1.5),k=Math.min(1,dt*6);
+     u.uAmp.value=lerp(u.uAmp.value,s.flick>0?0.05:0.1+Math.min(0.5,wv*1.1),k);u.uPh.value+=dt*(2+wv*22);
+     u.uPlA.value=lerp(u.uPlA.value,s.flick>0?0.85:0.25+wv*0.4,k);u.uPl.value+=dt*(s.flick>0?42:4+wv*10);
+     u.uAnt.value+=dt*(1.2+wv*2);}
     const hop=s.flick>0?Math.sin((0.35-s.flick)/0.35*Math.PI)*0.25:0;
     if(s.grow<1){s.grow=Math.min(1,s.grow+dt/150);s.s=s.s0*s.grow;s.m.scale.setScalar(s.s);}
     s.m.position.set(s.pos.x,terrainH(s.pos.x,s.pos.z)+0.085*s.s+hop+0.01*Math.sin(T*6+s.yaw*3),s.pos.z);
