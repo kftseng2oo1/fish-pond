@@ -1,0 +1,2048 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1d3a33">
+<title>故鄉魚塭</title>
+<meta name="description" content="一公頃的 3D 混養魚塭：虱目魚、草蝦、文蛤、水車、竹筏餵料、海水閘門、濕地鳥類、四角監視器與魚網收成">
+<meta name="apple-mobile-web-app-title" content="故鄉魚塭">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#cfe2ee;font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;color:#13261f}
+#c{position:fixed;inset:0;width:100%;height:100%;touch-action:none;display:block}
+.card{background:rgba(255,255,255,.86);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-radius:14px;box-shadow:0 4px 18px rgba(0,0,0,.15)}
+#hud{position:fixed;left:calc(10px + env(safe-area-inset-left));top:calc(10px + env(safe-area-inset-top));padding:10px 12px;width:200px;font-size:13px;line-height:1.35}
+#hud .ttl{font-weight:800;font-size:15px}
+#hud .sub{font-size:11.5px;color:#466057;margin-bottom:6px}
+#hud .row{display:flex;justify-content:space-between;align-items:baseline;margin-top:4px}
+#hud b{font-variant-numeric:tabular-nums}
+.bar{position:relative;height:8px;border-radius:4px;margin:4px 0 2px;background:linear-gradient(90deg,#7fb36a,#4f9aa8 60%,#2d6f9a)}
+.bar .ideal{position:absolute;left:42.8%;width:28.6%;top:-2px;bottom:-2px;border:2px solid #fff;border-radius:4px;box-shadow:0 0 0 1px rgba(0,0,0,.2)}
+.bar .mark{position:absolute;top:-4px;width:4px;height:16px;margin-left:-2px;background:#13261f;border-radius:2px;transition:left .3s}
+.scale{display:flex;justify-content:space-between;font-size:10px;color:#6a7d76}
+#status{margin-top:6px;font-size:12px;padding:5px 7px;border-radius:8px;background:#e6f2ea}
+#status.warn{background:#fde6dc;color:#8a2c12}
+#bar{position:fixed;left:0;right:0;bottom:0;padding:8px calc(8px + env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left));display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.grp{display:flex;gap:6px;overflow-x:auto;pointer-events:auto;scrollbar-width:none;padding:2px}
+.grp::-webkit-scrollbar{display:none}
+.grp button{flex:0 0 auto;border:0;border-radius:22px;padding:9px 14px;font-size:14px;font-weight:600;background:rgba(255,255,255,.9);color:#13261f;box-shadow:0 2px 8px rgba(0,0,0,.15);font-family:inherit}
+.grp button.on{background:#1f6b57;color:#fff}
+.grp.views button{padding:7px 12px;font-size:13px;background:rgba(20,45,38,.78);color:#eaf4ef}
+.grp.views button.on{background:#f2c14e;color:#13261f}
+.grp button:active{transform:scale(.96)}
+#info{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(108px + env(safe-area-inset-bottom));width:min(420px,calc(100% - 20px));padding:12px 14px 12px;font-size:14px;line-height:1.55;transition:opacity .2s}
+#info.hide{opacity:0;pointer-events:none}
+#info h3{margin:0 0 4px;font-size:16px}
+#info p{margin:0}
+#infoClose{position:absolute;right:6px;top:4px;border:0;background:none;font-size:22px;color:#466057;padding:4px 8px}
+#followBtn{margin-top:8px;border:0;border-radius:16px;padding:6px 12px;background:#1f6b57;color:#fff;font-size:13px;font-family:inherit}
+#labels{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.lbl{position:absolute;left:0;top:0;white-space:nowrap;font-size:12px;font-weight:700;color:#fff;background:rgba(20,45,38,.72);padding:3px 8px;border-radius:10px;will-change:transform}
+.lbl:after{content:"";position:absolute;left:50%;bottom:-5px;margin-left:-5px;border:5px solid transparent;border-bottom:0;border-top-color:rgba(20,45,38,.72)}
+.lbl.dim{background:rgba(255,255,255,.85);color:#13261f}
+.lbl.dim:after{border-top-color:rgba(255,255,255,.85)}
+#hint{position:fixed;left:50%;top:calc(52px + env(safe-area-inset-top));transform:translateX(-50%);font-size:12px;z-index:25;background:rgba(20,45,38,.8);color:#fff;padding:6px 12px;border-radius:14px;transition:opacity 1s;pointer-events:none;white-space:nowrap}
+#uw{position:fixed;right:calc(10px + env(safe-area-inset-right));top:calc(10px + env(safe-area-inset-top));background:rgba(30,70,60,.85);color:#dff;padding:5px 10px;border-radius:12px;font-size:12px;display:none}
+#picker{position:fixed;inset:0;background:rgba(10,25,20,.45);display:flex;align-items:flex-end;justify-content:center;z-index:20;transition:opacity .2s}
+#picker.hide{opacity:0;pointer-events:none}
+#picker .sheet{width:min(460px,100%);margin:0 8px calc(8px + env(safe-area-inset-bottom));padding:14px 14px 12px}
+#picker h3{margin:0 0 10px;font-size:17px}
+#chars{display:flex;flex-direction:column;gap:8px}
+.charCard{display:grid;grid-template-columns:52px 1fr;grid-template-rows:auto auto;column-gap:10px;text-align:left;border:2px solid transparent;border-radius:12px;padding:8px 10px;background:#f1f5f2;font-family:inherit;color:#13261f}
+.charCard.on{border-color:#1f6b57;background:#e2f0e9}
+.charCard .em{grid-row:1/3;font-size:38px;line-height:52px;text-align:center}
+.charCard .nm{font-weight:800;font-size:15px}
+.charCard .ds{font-size:12.5px;color:#46605a;line-height:1.45}
+#pickClose{margin-top:10px;width:100%;border:0;border-radius:12px;padding:10px;background:#1f6b57;color:#fff;font-size:15px;font-weight:700;font-family:inherit}
+.grp button.ico{width:42px;padding:9px 0;font-size:17px;text-align:center}
+.modal{position:fixed;inset:0;background:rgba(10,25,20,.45);display:flex;align-items:flex-end;justify-content:center;z-index:20;transition:opacity .2s}
+.modal.hide{opacity:0;pointer-events:none}
+.modal .sheet{width:min(460px,100%);max-height:86vh;overflow:auto;margin:0 8px calc(8px + env(safe-area-inset-bottom));padding:14px 14px 12px}
+.modal h3{margin:0 0 10px;font-size:17px}
+.modal .done{margin-top:10px;width:100%;border:0;border-radius:12px;padding:10px;background:#1f6b57;color:#fff;font-size:15px;font-weight:700;font-family:inherit}
+.tip{font-size:12.5px;color:#46605a;line-height:1.5;margin-top:8px}
+.tip.warn{color:#a3361a;font-weight:700}
+#moreMenu{position:fixed;left:calc(10px + env(safe-area-inset-left));bottom:calc(104px + env(safe-area-inset-bottom));display:none;flex-direction:column;gap:2px;padding:6px;z-index:15;min-width:200px}
+#moreMenu.show{display:flex}
+#moreMenu button{border:0;background:none;text-align:left;padding:10px 12px;border-radius:10px;font-size:14.5px;font-family:inherit;color:#13261f}
+#moreMenu button:active{background:#e2f0e9}
+#moreMenu button.on{color:#1f6b57;font-weight:700}
+#followBar{position:fixed;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top));padding:6px 6px 6px 12px;font-size:13px;display:none;align-items:center;gap:8px;white-space:nowrap;z-index:6}
+#followBar.show{display:flex}
+#followBar button{border:0;border-radius:14px;padding:5px 10px;background:#13261f;color:#fff;font-size:12.5px;font-family:inherit}
+#shot img{width:100%;max-height:62vh;object-fit:contain;background:#0d1a16;border-radius:10px;display:block;-webkit-touch-callout:default}
+#shot .row2{display:flex;gap:8px;margin-top:10px}
+#shot .row2 button{flex:1;border:0;border-radius:12px;padding:10px;font-size:15px;font-weight:700;font-family:inherit;background:#1f6b57;color:#fff}
+#shot .row2 button.gray{background:#dfe7e3;color:#13261f}
+#flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:30}
+.srow{display:grid;grid-template-columns:1fr 40px 76px 40px;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid #e3ebe7}
+.srow .nm{font-weight:700;font-size:14.5px}
+.srow b{text-align:center;font-variant-numeric:tabular-nums}
+.srow button{height:36px;border:0;border-radius:10px;background:#e2f0e9;font-size:18px;font-weight:700;color:#13261f}
+.srow button:disabled{opacity:.35}
+.guide h4{margin:12px 0 4px;font-size:14.5px;color:#1f6b57}
+.guide p,.guide li{font-size:13.5px;line-height:1.6;margin:0}
+.guide ul{margin:0;padding-left:18px}
+body.saver #hud,body.saver #bar,body.saver #labels,body.saver #info,body.saver #moreMenu,body.saver #followBar,body.saver #uw{display:none!important}
+#cctv{position:fixed;inset:0;z-index:12;pointer-events:none;font-family:ui-monospace,Menlo,Consolas,monospace;color:#eaffea}
+#cctv.hide{display:none}
+#ccTouch{position:absolute;inset:0;pointer-events:auto;touch-action:none}
+#ccFx{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0 1px,transparent 1px 3px),radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55) 100%)}
+#ccTop{position:absolute;left:calc(12px + env(safe-area-inset-left));top:calc(10px + env(safe-area-inset-top));font-size:13px;line-height:1.5;text-shadow:0 1px 3px #000}
+#ccTop b{font-size:14.5px}
+#ccRec{color:#ff3b3b;font-weight:700}
+#ccIR{color:#ffd28a}
+#ccX{position:absolute;right:calc(10px + env(safe-area-inset-right));top:calc(10px + env(safe-area-inset-top));pointer-events:auto;border:1px solid rgba(220,255,220,.4);background:rgba(10,20,14,.75);color:#fff;border-radius:16px;padding:7px 12px;font:inherit;font-size:13px}
+#ccQuad{position:absolute;inset:0;pointer-events:none}
+#ccQuad .ln{position:absolute;background:rgba(0,0,0,.8)}
+.ccQ{position:absolute;font-size:11.5px;text-shadow:0 1px 2px #000;padding:6px 8px;line-height:1.35}
+.ccQ i{font-style:normal;opacity:.85}
+#ccPanel{position:absolute;left:0;right:0;bottom:0;padding:22px calc(8px + env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left));background:linear-gradient(transparent,rgba(0,0,0,.6) 35%);pointer-events:auto;display:flex;flex-direction:column;gap:6px}
+.ccRow{display:flex;gap:6px;overflow-x:auto;align-items:center;scrollbar-width:none}
+.ccRow::-webkit-scrollbar{display:none}
+.ccRow button{flex:0 0 auto;border:1px solid rgba(200,255,200,.35);background:rgba(10,20,14,.72);color:#dfffe0;border-radius:10px;padding:8px 11px;font:inherit;font-size:13px}
+.ccRow button.on{background:#2f8f55;border-color:#2f8f55;color:#fff}
+#ccPtz.dis{opacity:.35;pointer-events:none}
+#ccZoom{flex:1 1 90px;min-width:80px;accent-color:#3fbf6f}
+#ccZoomTxt{min-width:42px;text-align:center;font-size:13px}
+#ccHint{font-size:11.5px;opacity:.8;text-align:center}
+body.cctv #hud,body.cctv #bar,body.cctv #labels,body.cctv #info,body.cctv #followBar,body.cctv #moreMenu,body.cctv #uw{display:none!important}
+#ccBoxes{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.bbox{position:absolute;left:0;top:0;border:2px solid #7CFC9A;border-radius:3px;box-shadow:0 0 0 1px rgba(0,0,0,.35);display:none}
+.bbox span{position:absolute;left:-2px;bottom:100%;font-size:10.5px;line-height:1.3;padding:1px 4px;color:#000;white-space:nowrap;border-radius:3px 3px 0 0}
+#ccTrackChip{display:none;margin-top:4px;pointer-events:auto;background:rgba(255,80,80,.85);color:#fff;border-radius:10px;padding:3px 9px;font-size:12px;cursor:pointer}
+.brow{display:grid;grid-template-columns:14px 1fr auto;gap:10px;align-items:start;padding:9px 0;border-bottom:1px solid #e3ebe7}
+.brow i{width:14px;height:14px;border-radius:50%;margin-top:3px;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+.brow b{font-size:14.5px}.brow small{color:#5b736c}.brow .ok{color:#1f6b57;font-weight:700}
+.brow p{margin:3px 0 0;font-size:12.5px;line-height:1.5;color:#334a43}
+.brow button{border:0;border-radius:10px;padding:7px 10px;background:#1f6b57;color:#fff;font-size:12.5px;font-family:inherit;white-space:nowrap}
+#ccFindBtn{margin-top:8px;margin-left:6px;border:0;border-radius:16px;padding:6px 12px;background:#2f4f8f;color:#fff;font-size:13px;font-family:inherit}
+#hvBar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(108px + env(safe-area-inset-bottom));width:min(440px,calc(100% - 20px));padding:10px 12px;display:none;z-index:14;font-size:13.5px;line-height:1.5}
+#hvBar.show{display:block}
+body.cctv #hvBar{bottom:calc(128px + env(safe-area-inset-bottom))}
+#hvCap{font-weight:700}
+#hvCount{font-size:12.5px;color:#46605a;font-variant-numeric:tabular-nums}
+.hvBtns{display:flex;gap:6px;margin-top:6px}
+.hvBtns button{border:0;border-radius:14px;padding:6px 11px;background:#e2f0e9;color:#13261f;font-size:12.5px;font-family:inherit;font-weight:700}
+.hvBtns button.on{background:#1f6b57;color:#fff}
+#hvCam{display:none}
+.hvrow{display:flex;gap:8px;margin-top:12px}
+.hvrow button{flex:1;border:0;border-radius:12px;padding:10px;font-size:15px;font-weight:700;font-family:inherit;background:#1f6b57;color:#fff}
+.hvrow button.gray{background:#dfe7e3;color:#13261f}
+#hvDoneTxt{display:flex;gap:8px;margin-top:6px}
+.hvres{flex:1;text-align:center;background:#eef5f1;border-radius:12px;padding:10px 4px}
+.hvres b{display:block;font-size:24px;color:#1f6b57}.hvres span{font-size:12.5px;color:#46605a}
+#err{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:30px;text-align:center}
+@media (max-width:420px){#hud{width:172px;font-size:12px}#hint{top:auto;bottom:calc(110px + env(safe-area-inset-bottom))}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="labels"></div>
+<div id="hud" class="card">
+  <div class="ttl">🐟 故鄉魚塭</div>
+  <div class="sub">一公頃混養 · 虱目魚 · 草蝦 · 蛤蠣</div>
+  <div class="row"><span>池水鹽度</span><b id="sal">18.0 ‰</b></div>
+  <div class="bar"><div class="ideal"></div><div id="salMark" class="mark"></div></div>
+  <div class="scale"><span>淡水 0</span><span>理想 15–25</span><span>海水 35</span></div>
+  <div class="row"><span>溶氧</span><b id="do">6.2 mg/L</b></div>
+  <div id="status">理想混養鹽度 ✓</div>
+</div>
+<div id="uw">🫧 水下視角</div>
+<div id="hint">拖曳旋轉・雙指縮放・點水面嚇魚・點魚跟拍</div>
+<div id="info" class="card hide"><button id="infoClose" aria-label="關閉">×</button><h3></h3><p></p><button id="followBtn">🎥 鏡頭跟隨</button><button id="ccFindBtn">📹 用監視器追蹤</button></div>
+<div id="bar">
+  <div class="grp">
+    <button id="bPhoto" class="ico" aria-label="拍照">📷</button>
+    <button id="bMore" class="ico" aria-label="更多">⋯</button>
+    <button id="bFeedF">🐟 餵虱目魚（3袋）</button>
+    <button id="bFeedS">🦐 餵草蝦（3袋）</button>
+    <button id="bCctv">📹 監視器</button>
+    <button id="bHarvest">🎣 收成</button>
+    <button id="bNight">🌙 夜間</button>
+    <button id="bGate">🌊 海水閘門：關</button>
+    <button id="bFresh">💧 淡水抽水：關</button>
+    <button id="bAer" class="on">⚙️ 水車：開</button>
+  </div>
+  <div class="grp views">
+    <button data-v="all" class="on">全景</button>
+    <button data-v="gate">閘門</button>
+    <button data-v="aer">水車</button>
+    <button data-v="raft">竹筏</button>
+    <button data-v="under">水下</button>
+    <button data-v="side">堤岸</button>
+  </div>
+</div>
+<div id="cctv" class="hide">
+  <div id="ccTouch"></div>
+  <div id="ccFx"></div>
+  <div id="ccBoxes"></div>
+  <div id="ccQuad">
+    <div class="ln" style="left:50%;top:0;bottom:0;width:2px;margin-left:-1px"></div><div class="ln" style="top:50%;left:0;right:0;height:2px;margin-top:-1px"></div>
+    <div class="ccQ" style="left:0;top:0;padding-top:calc(54px + env(safe-area-inset-top))">CAM 1 東北角<br><i></i></div>
+    <div class="ccQ" style="left:50%;top:0;padding-top:calc(54px + env(safe-area-inset-top))">CAM 2 西北角<br><i></i></div>
+    <div class="ccQ" style="left:0;top:50%">CAM 3 西南角<br><i></i></div>
+    <div class="ccQ" style="left:50%;top:50%">CAM 4 東南角<br><i></i></div>
+  </div>
+  <div id="ccTop"><span id="ccRec">● REC</span> <b id="ccName">CAM 1</b><br><span id="ccTime"></span> <span id="ccIR"></span><br><span id="ccTrackChip"></span></div>
+  <button id="ccX">✕ 離開監視器</button>
+  <div id="ccPanel">
+    <div class="ccRow"><button data-cam="0">CAM 1</button><button data-cam="1">CAM 2</button><button data-cam="2">CAM 3</button><button data-cam="3">CAM 4</button><button id="ccSplitBtn">⊞ 四分割</button><button id="ccBirds">🐦 鳥況</button><button id="ccBoxBtn" class="on">🔲 辨識框：開</button><button id="ccPatrol">🔄 巡航</button><button id="ccShot">📷 截圖</button></div>
+    <div class="ccRow" id="ccPtz"><button id="ccL">◀</button><button id="ccU">▲</button><button id="ccD">▼</button><button id="ccR">▶</button><button id="ccOut">－</button><input id="ccZoom" type="range" min="1" max="15" step="0.1" value="1"><span id="ccZoomTxt">×1.0</span><button id="ccIn">＋</button><button id="ccHome">◎ 回原位</button></div>
+    <div id="ccHint"></div>
+  </div>
+</div>
+<div id="moreMenu" class="card">
+  <button id="bSound">🔊 環境音效：開</button>
+  <button id="bBirds">🐦 濕地鳥類</button>
+  <button id="bStock">🐟 放養數量</button>
+  <button id="bChar">👤 換養殖戶</button>
+  <button id="bLbl" class="on">🏷 地點標籤</button>
+  <button id="bSaver">🖥 螢幕保護模式</button>
+  <button id="bQual">✨ 畫質：高畫質</button>
+  <button id="bGuide">📋 混養須知</button>
+</div>
+<div id="followBar" class="card">🎥 跟拍：<b id="fName"></b><button id="fX">✕ 結束</button></div>
+<div id="shot" class="modal hide"><div class="sheet card"><img id="shotImg" alt="魚塭照片"><div class="tip">iPhone 也可以長按照片儲存</div><div class="row2"><button id="shotSave">📤 分享／儲存</button><button id="shotX" class="gray">關閉</button></div></div></div>
+<div id="flash"></div>
+<div id="stock" class="modal hide"><div class="sheet card"><h3>放養數量</h3><div id="stockRows"></div><div id="loadTxt" class="tip"></div>
+  <div class="tip">畫面上的魚蝦貝都放大了，數量只是示意比例。放得越多，池水溶氧越低（左上角可看）。</div><button class="done" id="stockDone">完成</button></div></div>
+<div id="guide" class="modal hide"><div class="sheet card guide"><h3>📋 虱目魚・草蝦・文蛤混養須知</h3>
+  <h4>分層分工</h4><ul><li>虱目魚在中上層活動，吃浮性飼料和池中藻類。</li><li>草蝦在池底爬行，吃沉性飼料和殘餌，白天多躲著，晚上較活躍。</li><li>文蛤埋在底泥裡濾食浮游藻類，有助穩定水色。</li></ul>
+  <h4>鹽度</h4><ul><li>虱目魚是廣鹽性魚，淡水到海水都能活；草蝦、文蛤偏好半鹹水。</li><li>用海水閘門和淡水抽水慢慢調整，避免一次變動太大。</li><li>大雨、颱風後鹽度會突然下降，要特別留意。</li></ul>
+  <h4>溶氧與水車</h4><ul><li>夜間到清晨藻類也在耗氧，是一天中溶氧最低的時候，夜裡一定要開水車。</li><li>悶熱、陰天、無風時更容易缺氧。</li><li>魚群浮到水面張嘴（浮頭）是缺氧警訊，要立刻增氧。</li></ul>
+  <h4>投餵</h4><ul><li>少量多次，看搶食情況決定份量；吃不完的殘餌會敗壞水質。</li><li>魚料、蝦料分開餵：浮性料給魚，沉性料給蝦。</li></ul>
+  <h4>日常巡池</h4><ul><li>每天看水色、聞氣味、觀察魚蝦活動。</li><li>定期換水，收成後清淤、曬池再放養。</li></ul>
+  <button class="done" id="guideDone">知道了</button></div></div>
+<div id="birds" class="modal hide"><div class="sheet card"><h3>🐦 濕地鳥類</h3><div class="tip" id="birdSeenTxt" style="margin-top:0"></div>
+  <div class="tip">打開監視器，畫面裡的鳥會被自動辨識框起來；看清楚一種就會記入觀察紀錄。按「找牠」由最近的監視器轉過去追蹤。</div>
+  <div id="birdRows"></div><button class="done" id="birdsDone">完成</button></div></div>
+<div id="hvBar" class="card"><div id="hvCap"></div><div id="hvCount"></div><div class="hvBtns"><button id="hvFast">⏩ 加速</button><button id="hvCam">🎥 自動運鏡</button></div></div>
+<div id="hvConfirm" class="modal hide"><div class="sheet card"><h3>🎣 收成季到了</h3><div class="tip" id="hvAskTxt" style="margin-top:0;font-size:14px;color:#13261f"></div>
+  <div class="tip">冷藏貨車會開上堤岸，兩位工人拉著魚網從北往南把魚蝦趕到池邊，收成網袋後，由你選的養殖戶用撈網撈進籃子，搬運工扛上車，最後貨車把漁獲送走。收成後池子會清空，可以再放魚苗。（文蛤留在池底，這次不收）</div>
+  <div class="hvrow"><button id="hvGo">開始收成</button><button id="hvNo" class="gray">再等等</button></div></div></div>
+<div id="hvDone" class="modal hide"><div class="sheet card"><h3>🚚 收成完成，貨車出發了！</h3><div id="hvDoneTxt"></div>
+  <div class="tip">池子現在空了。放魚苗後，小魚小蝦會慢慢長大。</div>
+  <div class="hvrow"><button id="hvRestock">🐟 放魚苗重新養</button><button id="hvLater" class="gray">先不要</button></div></div></div>
+<div id="picker" class="hide"><div class="sheet card"><h3>選擇竹筏上的養殖戶</h3><div id="chars"></div><button id="pickClose">完成</button></div></div>
+<div id="err" class="card">3D 引擎載入失敗，請確認網路連線後重新整理。</div>
+
+<script src="three.min.js"></script>
+<script>
+(function(){
+if(!window.THREE){document.getElementById('err').style.display='flex';return;}
+const V3=THREE.Vector3, $=s=>document.querySelector(s);
+const rand=(a,b)=>a+Math.random()*(b-a);
+const lerp=(a,b,t)=>a+(b-a)*t;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function smooth(e0,e1,x){const t=clamp((x-e0)/(e1-e0),0,1);return t*t*(3-2*t);}
+function angLerp(a,b,t){let d=b-a;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;return a+d*t;}
+
+const BOTTOM=-1.6;         // 池底
+const SEA_Y=0.15;          // 外海水位（略高於池水，開閘即流入）
+
+/* ---------- 地形 ---------- */
+function terrainH(x,z){
+  const ax=Math.abs(x),az=Math.abs(z),d=Math.max(ax,az);
+  let h;
+  if(d<46) h=BOTTOM+0.07*Math.sin(x*0.31)*Math.cos(z*0.27);
+  else if(d<50) h=lerp(BOTTOM,0,smooth(46,50,d));
+  else if(d<52.5) h=lerp(0,1.2,smooth(50,52.5,d));
+  else if(d<57.5) h=1.2;
+  else if(d<61) h=lerp(1.2,0.4,smooth(57.5,61,d));
+  else h=0.4+0.1*Math.sin(x*0.07)*Math.cos(z*0.06)*(1-smooth(100,128,d));
+  if(z>76) h=lerp(h,-4,smooth(78,98,z));
+  if(z>44&&z<100){ // 引水道
+    const w=(1-smooth(3.0,5.0,ax))*smooth(44,47,z);
+    h=Math.min(h,lerp(h,BOTTOM,w));
+  }
+  return h;
+}
+function terrainColor(x,z,h,c){
+  const d=Math.max(Math.abs(x),Math.abs(z));
+  const n=(Math.sin(x*1.7)*Math.cos(z*1.3)+Math.sin(x*0.37+z*0.51))*0.035;
+  if(z>76&&d>58&&Math.abs(x)>4.5) c.setHex(0xd2bf8e);
+  else if(h<-0.15) c.setHex(0x5b4b37);
+  else if(h<0.55&&d<53) c.setHex(0x8c7a58);
+  else if(d>=53.3&&d<=56.7&&h>1.1) c.setHex(0xa8946c);
+  else if(d<61) c.setHex(0x6e8c3c);
+  else c.setHex(0x7d9a48);
+  c.offsetHSL(0,0,n);
+}
+
+/* ---------- 合併幾何工具 ---------- */
+function M(x=0,y=0,z=0,rx=0,ry=0,rz=0,sx=1,sy=1,sz=1){
+  return new THREE.Matrix4().compose(new V3(x,y,z),new THREE.Quaternion().setFromEuler(new THREE.Euler(rx,ry,rz)),new V3(sx,sy,sz));
+}
+function part(geo,color,m){
+  const g=geo.index?geo.toNonIndexed():geo.clone();
+  if(m) g.applyMatrix4(m);
+  if(color!=null||!g.attributes.color){
+    const c=new THREE.Color(color==null?0xffffff:color),n=g.attributes.position.count,a=new Float32Array(n*3);
+    for(let i=0;i<n;i++){a[i*3]=c.r;a[i*3+1]=c.g;a[i*3+2]=c.b;}
+    g.setAttribute('color',new THREE.BufferAttribute(a,3));
+  }
+  return g;
+}
+function merge(parts){
+  let n=0;parts.forEach(p=>n+=p.attributes.position.count);
+  const P=new Float32Array(n*3),N=new Float32Array(n*3),C=new Float32Array(n*3);let o=0;
+  for(const p of parts){P.set(p.attributes.position.array,o);N.set(p.attributes.normal.array,o);C.set(p.attributes.color.array,o);o+=p.attributes.position.count*3;}
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(P,3));
+  g.setAttribute('normal',new THREE.BufferAttribute(N,3));
+  g.setAttribute('color',new THREE.BufferAttribute(C,3));
+  g.computeBoundingSphere();return g;
+}
+const YUP=new V3(0,1,0);
+function cyl(a,b,r,color,seg=6){ // 兩點間的圓柱
+  const A=new V3(...a),B=new V3(...b),dir=B.clone().sub(A),len=dir.length();
+  const g=new THREE.CylinderGeometry(r,r,len,seg);
+  const q=new THREE.Quaternion().setFromUnitVectors(YUP,dir.normalize());
+  const m=new THREE.Matrix4().compose(A.clone().add(B).multiplyScalar(0.5),q,new V3(1,1,1));
+  return part(g,color,m);
+}
+const vcMat=(o={})=>new THREE.MeshPhongMaterial(Object.assign({vertexColors:true,shininess:20},o));
+const lamb=(c)=>new THREE.MeshLambertMaterial({color:c});
+
+/* ---------- 場景 ---------- */
+const canvas=$('#c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
+renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene();
+const SKY_COL=new THREE.Color(0xd3e4ee), UW_COL=new THREE.Color(0x40604a);
+const skyFog=new THREE.Fog(SKY_COL,220,900), uwFog=new THREE.FogExp2(UW_COL,0.1);
+scene.fog=skyFog; scene.background=SKY_COL.clone();
+const camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,0.2,3000);
+
+const sunDir=new V3(60,110,40).normalize();
+const sky=new THREE.Mesh(new THREE.SphereGeometry(2000,32,16),new THREE.ShaderMaterial({
+  side:THREE.BackSide,depthWrite:false,fog:false,
+  uniforms:{top:{value:new THREE.Color(0x4f93d6)},bot:{value:new THREE.Color(0xe3edf1)},sun:{value:sunDir},glow:{value:1}},
+  vertexShader:'varying vec3 vP;void main(){vec4 w=modelMatrix*vec4(position,1.);vP=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}',
+  fragmentShader:'uniform vec3 top;uniform vec3 bot;uniform vec3 sun;uniform float glow;varying vec3 vP;void main(){vec3 d=normalize(vP-cameraPosition);float h=max(d.y,0.);vec3 c=mix(bot,top,pow(h,.55));float s=max(dot(d,sun),0.);c+=vec3(1.,.93,.75)*(pow(s,600.)*1.5+pow(s,12.)*.18)*glow;gl_FragColor=vec4(c,1.);}'
+}));
+scene.add(sky);
+
+const hemi=new THREE.HemisphereLight(0xd6ebff,0x6b5a3a,0.72);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xfff0d4,0.95);
+sun.position.copy(sunDir).multiplyScalar(150);
+sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+Object.assign(sun.shadow.camera,{left:-78,right:78,top:78,bottom:-78,near:10,far:400});
+sun.shadow.bias=-0.0006;
+scene.add(sun);
+
+/* 地形網格 */
+const TS=260,TN=260;
+const tg=new THREE.PlaneGeometry(TS,TS,TN,TN);tg.rotateX(-Math.PI/2);
+{const p=tg.attributes.position,col=new Float32Array(p.count*3),c=new THREE.Color();
+ for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getZ(i),h=terrainH(x,z);p.setY(i,h);terrainColor(x,z,h,c);col[i*3]=c.r;col[i*3+1]=c.g;col[i*3+2]=c.b;}
+ tg.setAttribute('color',new THREE.BufferAttribute(col,3));tg.computeVertexNormals();}
+const terrain=new THREE.Mesh(tg,new THREE.MeshLambertMaterial({vertexColors:true}));
+terrain.receiveShadow=true;terrain.userData.key='terrain';scene.add(terrain);
+
+// 外圍田地與鄰近魚塭
+const fieldMat=lamb(0x7d9a48);
+[[-815,-1500,1370,1582],[815,-1500,1370,1582],[0,-815,260,1370]].forEach(([cx,_z,w,dd],i)=>{
+  const g=new THREE.PlaneGeometry(w,dd);g.rotateX(-Math.PI/2);
+  const m=new THREE.Mesh(g,fieldMat);
+  if(i<2) m.position.set(cx,0.4,82-dd/2); else m.position.set(0,0.4,-130-dd/2);
+  scene.add(m);
+});
+const nbWater=new THREE.MeshPhongMaterial({color:0x5c7f55,shininess:80,specular:0x667766});
+const nbDike=lamb(0xa8946c);
+[[-240,-30,150,120],[240,-40,150,130],[-30,-245,190,150],[-265,-215,140,130],[250,-235,150,140],[-420,60,160,140],[420,40,150,150]].forEach(([x,z,w,d])=>{
+  const b=new THREE.Mesh(new THREE.PlaneGeometry(w+12,d+12).rotateX(-Math.PI/2),nbDike);b.position.set(x,0.55,z);scene.add(b);
+  const wt=new THREE.Mesh(new THREE.PlaneGeometry(w,d).rotateX(-Math.PI/2),nbWater);wt.position.set(x,0.72,z);scene.add(wt);
+});
+const seaFloor=new THREE.Mesh(new THREE.PlaneGeometry(3000,1200).rotateX(-Math.PI/2),lamb(0x8c8a6a));
+seaFloor.position.set(0,-4.2,680);scene.add(seaFloor);
+
+/* 池水（動態波紋） */
+const pondGeo=new THREE.PlaneGeometry(110,110,88,88);pondGeo.rotateX(-Math.PI/2);
+const pondBase=pondGeo.attributes.position.array.slice();
+const FRESH_COL=new THREE.Color(0x60824a),SALT_COL=new THREE.Color(0x3d7888);
+const pondMat=new THREE.MeshPhongMaterial({color:0x557f5a,specular:0xbfd4d0,shininess:70,transparent:true,opacity:0.64,side:THREE.DoubleSide,depthWrite:false});
+const pond=new THREE.Mesh(pondGeo,pondMat);pond.userData.key='pond';pond.renderOrder=2;scene.add(pond);
+
+/* 外海 */
+const seaGeo=new THREE.PlaneGeometry(1600,900,100,50);seaGeo.rotateX(-Math.PI/2);
+const seaBase=seaGeo.attributes.position.array.slice();
+const sea=new THREE.Mesh(seaGeo,new THREE.MeshPhongMaterial({color:0x2e6f8e,specular:0xcfe6ff,shininess:90,transparent:true,opacity:0.9,depthWrite:false}));
+sea.position.set(0,SEA_Y,55+450);sea.userData.key='sea';sea.renderOrder=2;scene.add(sea);
+
+/* ---------- 共用粒子 ---------- */
+const dotTex=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');const r=g.createRadialGradient(32,32,0,32,32,32);r.addColorStop(0,'rgba(255,255,255,1)');r.addColorStop(.6,'rgba(255,255,255,.8)');r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(0,0,64,64);return new THREE.CanvasTexture(c);})();
+function makePool(n,color,size,opacity){
+  const geo=new THREE.BufferGeometry(),pos=new Float32Array(n*3);
+  for(let i=0;i<n;i++)pos[i*3+1]=-9999;
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  const pts=new THREE.Points(geo,new THREE.PointsMaterial({color,size,map:dotTex,transparent:true,opacity,depthWrite:false}));
+  pts.frustumCulled=false;pts.renderOrder=3;scene.add(pts);
+  return {n,pos,vel:new Float32Array(n*3),life:new Float32Array(n),st:new Uint8Array(n),geo,i:0,
+    spawn(x,y,z,vx,vy,vz,l,s=0){const k=this.i;this.i=(k+1)%n;const j=k*3;pos[j]=x;pos[j+1]=y;pos[j+2]=z;this.vel[j]=vx;this.vel[j+1]=vy;this.vel[j+2]=vz;this.life[k]=l;this.st[k]=s;return k;},
+    kill(k){this.life[k]=0;pos[k*3+1]=-9999;}};
+}
+const splash=makePool(1400,0xffffff,0.2,0.85);
+const pelletsF=makePool(500,0xa8763c,0.17,1);   // 虱目魚浮性飼料
+const pelletsS=makePool(400,0x4a3220,0.1,1);    // 草蝦沉性飼料
+const bubbles=makePool(300,0xe4fbff,0.08,0.75);
+const foam=makePool(1400,0xf4f8ee,0.32,0.55);
+
+/* ---------- 虱目魚 ---------- */
+function fishBodyGeo(){
+  const g=new THREE.SphereGeometry(0.5,20,12);g.scale(1,0.2,0.12);
+  const p=g.attributes.position,col=new Float32Array(p.count*3),cb=new THREE.Color(0x2c5566),cs=new THREE.Color(0xe8eff3),c=new THREE.Color();
+  for(let i=0;i<p.count;i++){
+    const x=p.getX(i);const f=x<0?1-Math.pow(-x/0.5,1.5)*0.6:1-Math.pow(x/0.5,2.2)*0.15;
+    p.setY(i,p.getY(i)*f);p.setZ(i,p.getZ(i)*f);
+    c.copy(cs).lerp(cb,smooth(-0.01,0.06,p.getY(i)));col[i*3]=c.r;col[i*3+1]=c.g;col[i*3+2]=c.b;
+  }
+  g.setAttribute('color',new THREE.BufferAttribute(col,3));g.computeVertexNormals();
+  const ps=[part(g,null)];
+  const df=new THREE.Shape();df.moveTo(0.06,0.085);df.lineTo(-0.04,0.2);df.lineTo(-0.1,0.07);df.lineTo(0.06,0.085);
+  ps.push(part(new THREE.ShapeGeometry(df),0x4d6c78));
+  const pf=new THREE.Shape();pf.moveTo(0,0);pf.lineTo(-0.12,0.03);pf.lineTo(-0.1,-0.02);pf.lineTo(0,0);
+  const pg=new THREE.ShapeGeometry(pf);
+  ps.push(part(pg,0xbfcbd0,M(0.22,-0.04,0.05,0.6,0,0)));
+  ps.push(part(pg,0xbfcbd0,M(0.22,-0.04,-0.05,-0.6,0,0)));
+  const af=new THREE.Shape();af.moveTo(-0.18,-0.05);af.lineTo(-0.3,-0.11);af.lineTo(-0.33,-0.035);af.lineTo(-0.18,-0.05);
+  ps.push(part(new THREE.ShapeGeometry(af),0xaebcc2));
+  const E=new THREE.SphereGeometry(0.024,8,6);
+  ps.push(part(E,0x111111,M(0.36,0.015,0.04)));ps.push(part(E,0x111111,M(0.36,0.015,-0.04)));
+  return merge(ps);
+}
+const tailShape=new THREE.Shape();tailShape.moveTo(0,0.025);tailShape.lineTo(-0.27,0.17);tailShape.lineTo(-0.17,0);tailShape.lineTo(-0.27,-0.17);tailShape.lineTo(0,-0.025);tailShape.lineTo(0,0.025);
+const fishTailGeo=merge([part(new THREE.ShapeGeometry(tailShape),0x8da3ad)]);
+const fishGeo=fishBodyGeo();
+const fishMat=vcMat({shininess:110,specular:0xffffff,side:THREE.DoubleSide});
+
+const schools=[];for(let s=0;s<4;s++)schools.push({c:new V3(rand(-30,30),-0.8,rand(-30,30)),t:new V3(),timer:0,speed:2});
+schools.forEach(pickSchoolTarget);
+function pickSchoolTarget(s){s.t.set(rand(-38,38),rand(-1.2,-0.4),rand(-38,38));s.timer=rand(8,18);}
+const COUNTS={milkfish:72,shrimp:42,clam:700};
+try{const c=JSON.parse(localStorage.getItem('pond_counts')||'null');if(c)for(const k in COUNTS)if(typeof c[k]==='number')COUNTS[k]=Math.max(0,c[k]|0);}catch(e){}
+const fishes=[];
+function addFish(grow=1){
+  const g=new THREE.Group();g.rotation.order='YZX';
+  const body=new THREE.Mesh(fishGeo,fishMat);g.add(body);
+  const tail=new THREE.Mesh(fishTailGeo,fishMat);tail.position.x=-0.46;g.add(tail);
+  const s=rand(0.8,1.05);g.scale.setScalar(s*grow);
+  const sc=schools[fishes.length%4];
+  const f={g,tail,school:sc,pos:sc.c.clone().add(new V3(rand(-4,4),rand(-0.3,0.3),rand(-4,4))),vel:new V3(rand(-1,1),0,rand(-1,1)),
+    off:new V3(rand(-5,5),rand(-0.35,0.35),rand(-5,5)),phase:rand(0,6),yaw:0,pitch:0,spd:rand(1.6,2.4),jump:false,s0:s,grow};
+  g.position.copy(f.pos);g.userData={key:'milkfish',movable:true};
+  scene.add(g);fishes.push(f);
+}
+function removeFish(){const f=fishes.pop();if(!f)return;scene.remove(f.g);if(follow===f.g)follow=null;}
+for(let i=0;i<Math.min(COUNTS.milkfish,180);i++)addFish();
+
+/* ---------- 草蝦 ---------- */
+function shrimpGeo(){
+  const ps=[],S=new THREE.SphereGeometry(0.5,10,7);
+  const dark=0x343e3b,band=0xd6bf72,head=0x3d4b46,leg=0xb07a3c;
+  ps.push(part(S,head,M(0.14,0.035,0,0,0,-0.08,0.21,0.085,0.08)));
+  for(let i=0;i<6;i++){
+    const x=0.02-i*0.055,y=0.03-i*i*0.004,s=1-i*0.1;
+    ps.push(part(S,dark,M(x,y,0,0,0,0.1*i,0.075,0.075*s,0.07*s)));
+    ps.push(part(S,band,M(x-0.027,y+0.003,0,0,0,0.1*i,0.014,0.079*s,0.074*s)));
+  }
+  const tf=new THREE.Shape();tf.moveTo(0,0);tf.lineTo(-0.12,0.055);tf.lineTo(-0.15,0);tf.lineTo(-0.12,-0.055);tf.lineTo(0,0);
+  const tfg=new THREE.ShapeGeometry(tf);
+  ps.push(part(tfg,0x4f5a52,M(-0.285,-0.07,0,Math.PI/2,0,0)));
+  ps.push(part(tfg,0x4f5a52,M(-0.285,-0.07,0,-Math.PI/2,0,0)));
+  ps.push(part(new THREE.ConeGeometry(0.012,0.14,5),dark,M(0.32,0.05,0,0,0,-Math.PI/2)));
+  const E=new THREE.SphereGeometry(0.02,6,5);
+  ps.push(part(E,0x111111,M(0.27,0.065,0.038)));ps.push(part(E,0x111111,M(0.27,0.065,-0.038)));
+  for(const sd of [1,-1]){
+    ps.push(cyl([0.28,0.05,0.03*sd],[0.05,0.14,0.12*sd],0.004,0x7a5a3a,4));
+    ps.push(cyl([0.05,0.14,0.12*sd],[-0.25,0.16,0.2*sd],0.003,0x7a5a3a,4));
+    for(let k=0;k<5;k++){const x=0.18-k*0.04;ps.push(cyl([x,0,0.03*sd],[x+0.02,-0.08,0.085*sd],0.006,leg,4));}
+  }
+  return merge(ps);
+}
+const shrimpG=shrimpGeo(),shrimpMat=vcMat({shininess:60,specular:0x888888});
+const shrimps=[];
+function addShrimp(grow=1){
+  const m=new THREE.Mesh(shrimpG,shrimpMat);m.rotation.order='YZX';
+  const s0=rand(1.25,1.55),s=s0*grow;m.scale.setScalar(s);
+  const x=rand(-42,42),z=rand(-42,42);
+  const sh={m,s,s0,grow,pos:new V3(x,0,z),t:new V3(x,0,z),timer:0,flick:0,yaw:rand(0,6),vel:new V3()};
+  m.userData={key:'shrimp',movable:true};scene.add(m);shrimps.push(sh);
+}
+function removeShrimp(){const sh=shrimps.pop();if(!sh)return;scene.remove(sh.m);if(follow===sh.m)follow=null;}
+for(let i=0;i<Math.min(COUNTS.shrimp,120);i++)addShrimp();
+
+/* ---------- 蛤蠣（文蛤） ---------- */
+const clamGeo=new THREE.SphereGeometry(0.5,12,8);clamGeo.scale(1,0.42,0.8);
+{const p=clamGeo.attributes.position;for(let i=0;i<p.count;i++){if(p.getY(i)<0)p.setY(i,p.getY(i)*0.35);}clamGeo.computeVertexNormals();}
+const CLAM_MAX=1500,CLAMS=CLAM_MAX;
+const clams=new THREE.InstancedMesh(clamGeo,new THREE.MeshPhongMaterial({color:0xffffff,shininess:50}),CLAMS);
+const clamPos=[];
+{const dm=new THREE.Object3D(),c=new THREE.Color();
+ for(let i=0;i<CLAMS;i++){
+   let x,z;
+   if(Math.random()<0.75){x=rand(-43,43);z=rand(-43,-4);} else {x=rand(-43,43);z=rand(-4,43);}
+   const y=terrainH(x,z)+0.02;
+   dm.position.set(x,y,z);dm.rotation.set(rand(-0.25,0.25),rand(0,6.28),rand(-0.25,0.25));dm.scale.setScalar(rand(0.2,0.3));dm.updateMatrix();
+   clams.setMatrixAt(i,dm.matrix);
+   c.setHSL(rand(0.07,0.11),rand(0.2,0.45),rand(0.45,0.78));clams.setColorAt(i,c);
+   clamPos.push(new V3(x,y,z));
+ }}
+clams.count=Math.min(COUNTS.clam,CLAM_MAX);clams.userData.key='clam';scene.add(clams);
+
+/* ---------- 水車（葉輪增氧機） ---------- */
+const aerators=[];
+const aerFrameGeo=(()=>{const ps=[];
+  const fl=new THREE.CylinderGeometry(0.28,0.28,2.2,14);
+  ps.push(part(fl,0xe9ece6,M(1.75,0.05,0,Math.PI/2,0,0)));ps.push(part(fl,0xe9ece6,M(-1.75,0.05,0,Math.PI/2,0,0)));
+  const sp=new THREE.SphereGeometry(0.28,12,8);
+  [[1.75,1.1],[1.75,-1.1],[-1.75,1.1],[-1.75,-1.1]].forEach(([x,z])=>ps.push(part(sp,0xe9ece6,M(x,0.05,z))));
+  const bx=new THREE.BoxGeometry(1,1,1);
+  ps.push(part(bx,0xa7afb3,M(0,0.45,0.55,0,0,0,3.7,0.08,0.1)));ps.push(part(bx,0xa7afb3,M(0,0.45,-0.55,0,0,0,3.7,0.08,0.1)));
+  ps.push(part(bx,0xa7afb3,M(1.75,0.36,0,0,0,0,0.1,0.08,1.9)));ps.push(part(bx,0xa7afb3,M(-1.75,0.36,0,0,0,0,0.1,0.08,1.9)));
+  ps.push(part(bx,0x2b5c9c,M(0,0.78,0,0,0,0,0.6,0.5,0.55)));
+  ps.push(part(new THREE.CylinderGeometry(0.2,0.2,0.5,14),0x24497c,M(0,0.78,0,0,0,Math.PI/2)));
+  ps.push(part(bx,0x1d3555,M(0,1.06,0,0,0,0,0.5,0.06,0.45)));
+  ps.push(part(new THREE.CylinderGeometry(0.045,0.045,2.7,8),0x8c9498,M(0,0.3,0,0,0,Math.PI/2)));
+  ps.push(part(bx,0x8c9498,M(0,0.55,0,0,0,0,0.12,0.5,0.12)));
+  return merge(ps);})();
+const wheelGeo=(()=>{const ps=[];const bx=new THREE.BoxGeometry(1,1,1);
+  ps.push(part(new THREE.CylinderGeometry(0.15,0.15,0.36,12),0x2f6fb5,M(0,0,0,0,0,Math.PI/2)));
+  for(let k=0;k<8;k++){const a=k*Math.PI/4;
+    ps.push(part(bx,k%2?0x3d86d0:0xf4f4f0,M(0,0.36*Math.cos(a),0.36*Math.sin(a),a,0,0,0.36,0.42,0.035)));}
+  return merge(ps);})();
+const aerMat=vcMat({shininess:40});
+[[-22,-22],[22,-22],[22,22],[-22,22]].forEach(([x,z],i)=>{
+  const g=new THREE.Group();g.position.set(x,0,z);
+  const r=Math.hypot(x,z),tx=-z/r,tz=x/r;
+  g.rotation.y=Math.atan2(-tx,-tz);
+  const fr=new THREE.Mesh(aerFrameGeo,aerMat);fr.castShadow=true;g.add(fr);
+  const wheels=[1.0,-1.0].map(wx=>{const w=new THREE.Mesh(wheelGeo,aerMat);w.position.set(wx,0.3,0);w.castShadow=true;g.add(w);return w;});
+  g.userData.key='aerator';scene.add(g);
+  aerators.push({g,wheels,x,z,i});
+});
+
+// 浮在水面的電纜
+const cableMat=new THREE.LineBasicMaterial({color:0x1b1b1b});
+aerators.forEach(a=>{
+  const sx=Math.sign(a.x);const pts=[new V3(a.x,0.5,a.z)];
+  for(let k=1;k<=8;k++){const t=k/8;pts.push(new V3(lerp(a.x+sx*1.8,sx*50,t),0.04,a.z+Math.sin(t*3)*1.2));}
+  pts.push(new V3(sx*52.5,1.25,a.z),new V3(sx*54.5,1.3,a.z));
+  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),cableMat));
+  const jb=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.7,0.4),lamb(0x6c7a80));jb.position.set(sx*54.8,1.55,a.z);jb.castShadow=true;scene.add(jb);
+});
+
+/* ---------- 竹筏 ---------- */
+const raft=new THREE.Group();raft.userData={key:'raft',movable:true};
+{const ps=[];const bam=new THREE.CylinderGeometry(0.085,0.085,4.2,8),node=new THREE.CylinderGeometry(0.094,0.094,0.045,8);
+ for(let i=0;i<9;i++){const z=-0.76+i*0.19,col=i%2?0xc9b46e:0xbfa95f;
+   ps.push(part(bam,col,M(0,0,z,0,0,Math.PI/2)));
+   [-1.8,-0.9,0,0.9,1.8].forEach(x=>ps.push(part(node,0x8f7a3e,M(x+(i%2)*0.2,0,z,0,0,Math.PI/2))));}
+ const cb=new THREE.CylinderGeometry(0.06,0.06,1.95,8);
+ ps.push(part(cb,0xa48f4f,M(1.6,0.13,0,Math.PI/2,0,0)));ps.push(part(cb,0xa48f4f,M(-1.6,0.13,0,Math.PI/2,0,0)));
+ ps.push(part(new THREE.CylinderGeometry(0.008,0.008,1.9,4),0x6b5a35,M(1.62,0.17,0,Math.PI/2,0,0)));
+ const rm=new THREE.Mesh(merge(ps),vcMat());rm.castShadow=true;rm.receiveShadow=true;raft.add(rm);}
+scene.add(raft);
+
+/* ---------- 飼料袋（一袋一袋） ---------- */
+function sackTex(title,sub,band,kind){
+  const c=document.createElement('canvas');c.width=512;c.height=352;const g=c.getContext('2d');
+  g.fillStyle='#efe9d8';g.fillRect(0,0,512,352);
+  g.strokeStyle='rgba(140,130,100,.22)';g.lineWidth=2;
+  for(let i=0;i<512;i+=7){g.beginPath();g.moveTo(i,0);g.lineTo(i,352);g.stroke();}
+  for(let j=0;j<352;j+=7){g.beginPath();g.moveTo(0,j);g.lineTo(512,j);g.stroke();}
+  g.fillStyle=band;g.fillRect(0,92,512,176);g.fillRect(0,34,512,16);g.fillRect(0,302,512,16);
+  g.fillStyle='#fff';g.textAlign='center';g.textBaseline='middle';
+  g.font='bold 74px "PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif';g.fillText(title,296,158);
+  g.font='bold 34px "PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif';g.fillText(sub,296,228);
+  g.save();g.translate(72,182);g.fillStyle='#fff';g.strokeStyle='#fff';
+  if(kind==='fish'){g.beginPath();g.ellipse(4,0,40,15,0,0,Math.PI*2);g.fill();g.beginPath();g.moveTo(-30,0);g.lineTo(-56,-20);g.lineTo(-48,0);g.lineTo(-56,20);g.closePath();g.fill();}
+  else{g.lineWidth=13;g.lineCap='round';g.beginPath();g.arc(0,4,30,Math.PI*0.85,Math.PI*2.2);g.stroke();g.lineWidth=3;g.beginPath();g.moveTo(26,-8);g.quadraticCurveTo(50,-40,20,-50);g.stroke();}
+  g.restore();
+  const t=new THREE.CanvasTexture(c);t.anisotropy=4;return t;
+}
+const sackGeo=(()=>{const g=new THREE.BoxGeometry(0.62,0.15,0.42,10,3,8);const p=g.attributes.position;
+  for(let i=0;i<p.count;i++){const x=p.getX(i)/0.31,z=p.getZ(i)/0.21;const k=(1-0.6*Math.pow(Math.abs(x),4))*(1-0.6*Math.pow(Math.abs(z),4));p.setY(i,p.getY(i)*k);}
+  g.computeVertexNormals();return g;})();
+const sackMatF=new THREE.MeshLambertMaterial({map:sackTex('虱目魚飼料','浮性顆粒 · 25 kg','#2c8048','fish')});
+const sackMatS=new THREE.MeshLambertMaterial({map:sackTex('草蝦飼料','沉性顆粒 · 20 kg','#c0462a','shrimp')});
+const BAG_MAX=3;
+const bags={fish:{stack:[],empty:[],mat:sackMatF,key:'bagF',bx:-1.28,bz:0.38},shrimp:{stack:[],empty:[],mat:sackMatS,key:'bagS',bx:-1.28,bz:-0.4}};
+function restock(type){const b=bags[type];b.empty.forEach(m=>raft.remove(m));b.empty=[];
+  while(b.stack.length<BAG_MAX){const i=b.stack.length;const m=new THREE.Mesh(sackGeo,b.mat);
+    m.position.set(b.bx+rand(-0.03,0.03),0.17+i*0.135,b.bz+rand(-0.02,0.02));m.rotation.y=rand(-0.08,0.08);
+    m.castShadow=true;m.receiveShadow=true;m.userData.key=b.key;raft.add(m);b.stack.push(m);}}
+restock('fish');restock('shrimp');
+const OPEN_POS=new V3(0.15,0.17,0.5);
+
+/* ---------- 養殖戶（三種角色） ---------- */
+const CHARS=[
+ {emoji:'👴',name:'阿雄伯',desc:'做了四十年的老養殖戶。戴斗笠、白汗衫、脖子掛毛巾，褲管捲起配白雨鞋，皮膚曬得黝黑。',
+  skin:0x9a6642,skinDark:0x86563a,brow:0xcfcac2,hair:0xbdb7ad,hairStyle:'short',shirt:0xf3f1ea,sleeve:'none',pants:0x34405e,pantsRolled:true,boots:0xeeeee6,hat:'douli',towel:true,belt:true,scale:0.97},
+ {emoji:'👩‍🌾',name:'阿蘭姨',desc:'精打細算的老闆娘。花布頭巾加斗笠、碎花長袖上衣套上袖套，黑長褲配紅雨鞋。',
+  skin:0xcf9c76,skinDark:0xb98560,brow:0x2a2018,hair:0x1d1a17,hairStyle:'bun',shirt:0xd9708f,sleeve:'long',armCover:0x4f78b0,pants:0x2b2b31,boots:0xb93a2e,hat:'scarf',scale:0.93},
+ {emoji:'🧑‍🌾',name:'阿明',desc:'回鄉接手魚塭的年輕人。反戴棒球帽、短袖 T 恤，穿著橄欖綠青蛙裝，下水也不怕。',
+  skin:0xc28a62,skinDark:0xac744e,brow:0x151515,hair:0x151515,hairStyle:'short',shirt:0x2f6f9a,sleeve:'short',waders:true,wader:0x4d5a35,pants:0x4d5a35,boots:0x3a4428,hat:'cap',capCol:0x1f2a44,scale:1.03},
+];
+function limb(r1,r2,len,c1,c2,split){
+  const ps=[];
+  if(c2==null||split>=1){ps.push(part(new THREE.CylinderGeometry(r1,r2,len,12),c1,M(0,-len/2,0)));}
+  else{const l1=len*split,rm=lerp(r1,r2,split);
+    ps.push(part(new THREE.CylinderGeometry(r1*1.12,rm*1.12,l1,12),c1,M(0,-l1/2,0)));
+    ps.push(part(new THREE.CylinderGeometry(rm,r2,len-l1,12),c2,M(0,-l1-(len-l1)/2,0)));}
+  ps.push(part(new THREE.SphereGeometry(r1*(c2!=null&&split<1?1.12:1),12,8),c1));
+  ps.push(part(new THREE.SphereGeometry(r2,12,8),c2==null||split>=1?(c2==null?c1:c2):c2,M(0,-len,0)));
+  return merge(ps);
+}
+function buildPerson(ch){
+  const mat=vcMat({shininess:12});
+  const root=new THREE.Group();root.userData.key='farmer';
+  const mk=(parent,geo)=>{const m=new THREE.Mesh(geo,mat);m.castShadow=true;parent.add(m);return m;};
+  const G=(parent,x,y,z)=>{const g=new THREE.Group();g.position.set(x,y,z);parent.add(g);return g;};
+  const S=(w=14,h=10)=>new THREE.SphereGeometry(1,w,h);
+  const B=new THREE.BoxGeometry(1,1,1);
+  const lower=ch.waders?ch.wader:ch.pants;
+  // 骨盆
+  const pelvis=G(root,0,0.9,0);
+  {const pp=[part(S(),lower,M(0,0,0,0,0,0,0.115,0.12,0.17))];
+   if(ch.belt)pp.push(part(new THREE.CylinderGeometry(0.16,0.16,0.035,16),0x3a2a1e,M(0,0.075,0,0,0,0,0.74,1,1)));
+   mk(pelvis,merge(pp));}
+  // 軀幹
+  const torso=G(pelvis,0,0.04,0);
+  {const tp=[];
+   tp.push(part(new THREE.CylinderGeometry(0.14,0.125,0.24,16),ch.waders?ch.wader:ch.shirt,M(0,0.12,0,0,0,0,0.76,1,1)));
+   tp.push(part(new THREE.CylinderGeometry(0.168,0.14,0.27,16),ch.shirt,M(0,0.36,0,0,0,0,0.68,1,1)));
+   if(ch.waders){
+     tp.push(part(B,ch.wader,M(0.098,0.3,0,0,0,0,0.03,0.2,0.2)));
+     for(const s of[1,-1]){tp.push(cyl([0.1,0.4,0.085*s],[0.01,0.5,0.11*s],0.012,0x2c331f,4));tp.push(cyl([0.01,0.5,0.11*s],[-0.1,0.28,0.07*s],0.012,0x2c331f,4));
+       tp.push(part(B,0xc9c9b8,M(0.105,0.39,0.085*s,0,0,0,0.01,0.03,0.03)));}
+   }
+   if(ch.sleeve==='long'){ // 碎花：小白點
+     for(let k=0;k<26;k++){const a=rand(-1.3,1.3),y=rand(0.24,0.48),r=0.165-(y-0.24)*0.0;tp.push(part(S(5,4),0xfbe6ee,M(Math.cos(a)*0.112,y,Math.sin(a)*0.16,0,0,0,0.012,0.012,0.012)));}
+   }
+   const shCol=ch.sleeve==='none'?ch.skin:ch.shirt;
+   for(const s of[1,-1])tp.push(part(S(),shCol,M(0,0.475,0.14*s,0,0,0,0.07,0.07,0.08)));
+   if(ch.sleeve==='none'){tp.push(part(S(),ch.skin,M(0.035,0.465,0,0,0,0,0.085,0.045,0.095)));
+     for(const s of[1,-1])tp.push(cyl([0.07,0.42,0.08*s],[0.0,0.5,0.1*s],0.018,ch.shirt,6));}
+   tp.push(part(new THREE.CylinderGeometry(0.046,0.054,0.11,12),ch.skin,M(0,0.54,0)));
+   if(ch.towel){tp.push(part(new THREE.TorusGeometry(0.068,0.024,8,18),0xf6f6ef,M(0,0.525,0,Math.PI/2,0,0)));
+     tp.push(part(B,0xf6f6ef,M(0.08,0.42,0.05,0,0,0.1,0.02,0.2,0.05)));tp.push(part(B,0xf6f6ef,M(0.08,0.43,-0.05,0,0,0.1,0.02,0.18,0.05)));}
+   if(ch.sleeve==='long')tp.push(part(new THREE.TorusGeometry(0.06,0.015,6,16),ch.shirt,M(0,0.515,0,Math.PI/2,0,0)));
+   mk(torso,merge(tp));}
+  // 頭
+  const head=G(torso,0,0.585,0);
+  {const hp=[];
+   hp.push(part(S(18,14),ch.skin,M(0,0.112,0,0,0,0,0.094,0.118,0.087)));
+   hp.push(part(S(),ch.skin,M(0.03,0.052,0,0,0,0,0.066,0.058,0.068)));
+   for(const s of[1,-1]){
+     hp.push(part(S(8,6),0xf3efe6,M(0.08,0.118,0.032*s,0,0,0,0.012,0.009,0.016)));
+     hp.push(part(S(8,6),0x1a1410,M(0.09,0.118,0.032*s,0,0,0,0.006,0.0075,0.0075)));
+     hp.push(part(B,ch.brow,M(0.09,0.139,0.033*s,0.12*s,0,0,0.008,0.007,0.032)));
+     hp.push(part(S(8,6),ch.skin,M(-0.004,0.11,0.088*s,0,0,0,0.016,0.03,0.014)));
+     hp.push(part(S(6,5),ch.skinDark,M(0.072,0.08,0.042*s,0,0,0,0.01,0.012,0.016)));
+   }
+   hp.push(part(S(8,6),ch.skinDark,M(0.098,0.095,0,0,0,0,0.02,0.027,0.016)));
+   hp.push(part(B,0x8a4a40,M(0.088,0.06,0,0,0,0,0.006,0.007,0.032)));
+   if(ch.hairStyle){
+     hp.push(part(new THREE.SphereGeometry(1,18,10,0,Math.PI*2,0,1.45),ch.hair,M(-0.008,0.117,0,0,0,0.42,0.1,0.124,0.093)));
+     if(ch.hairStyle==='bun')hp.push(part(S(),ch.hair,M(-0.1,0.16,0,0,0,0,0.045,0.045,0.045)));
+   }
+   if(ch.hat==='douli'){
+     hp.push(part(new THREE.ConeGeometry(0.34,0.16,24,1,true),0xd8c286,M(0,0.275,0)));
+     hp.push(part(new THREE.ConeGeometry(0.34,0.16,24,1,true),0xb59f62,M(0,0.272,0,Math.PI,0,0,1,0.05,1)));
+     hp.push(part(S(),0xc2ad6e,M(0,0.36,0,0,0,0,0.025,0.02,0.025)));
+     for(const s of[1,-1])hp.push(cyl([0,0.21,0.075*s],[0.045,0.02,0.04*s],0.004,0x5a4a2a,4));
+   }
+   if(ch.hat==='scarf'){
+     hp.push(part(new THREE.SphereGeometry(1,18,12,0,Math.PI*2,0,1.95),0xe07f9c,M(-0.01,0.112,0,0,0,0.75,0.106,0.13,0.1)));
+     hp.push(part(B,0xe07f9c,M(-0.075,-0.0,0,0,0,0.2,0.03,0.13,0.15)));
+     for(let k=0;k<14;k++){const a=rand(0.4,Math.PI*2-0.4);hp.push(part(S(5,4),0xfff1c9,M(-0.01+Math.cos(a)*0.09,0.14+rand(-0.02,0.07),Math.sin(a)*0.1,0,0,0,0.012,0.012,0.012)));}
+     hp.push(part(new THREE.ConeGeometry(0.33,0.15,24,1,true),0xd8c286,M(0,0.29,0)));
+     hp.push(part(new THREE.ConeGeometry(0.33,0.15,24,1,true),0xb59f62,M(0,0.287,0,Math.PI,0,0,1,0.05,1)));
+   }
+   if(ch.hat==='cap'){
+     hp.push(part(new THREE.SphereGeometry(1,18,10,0,Math.PI*2,0,1.25),ch.capCol,M(-0.005,0.125,0,0,0,0.1,0.103,0.125,0.096)));
+     hp.push(part(B,ch.capCol,M(-0.12,0.16,0,0,0,0.15,0.11,0.012,0.15)));
+     hp.push(part(B,0xf2f2f2,M(0.098,0.18,0,0,0,0.25,0.003,0.035,0.05)));
+   }
+   mk(head,merge(hp));}
+  // 手臂
+  const sh=[],el=[],hand=[];
+  for(const s of[1,-1]){
+    const g=G(torso,0,0.465,0.172*s);
+    let c1=ch.skin,c2=null,split=1;
+    if(ch.sleeve==='short'){c1=ch.shirt;c2=ch.skin;split=0.42;}
+    if(ch.sleeve==='long'){c1=ch.shirt;c2=ch.shirt;split=1;}
+    mk(g,limb(0.047,0.039,0.28,c1,c2,split));
+    const e=G(g,0,-0.28,0);
+    mk(e,limb(0.039,0.031,0.24,ch.sleeve==='long'?ch.armCover:ch.skin,null,1));
+    const h=G(e,0,-0.245,0);
+    mk(h,merge([part(S(),ch.skin,M(0.005,-0.045,0,0,0,0,0.03,0.058,0.043)),cyl([0.02,-0.01,0.018*s],[0.04,-0.05,0.03*s],0.011,ch.skin,6)]));
+    sh.push(g);el.push(e);hand.push(h);
+  }
+  // 水瓢（撒料用）
+  const scoop=new THREE.Group();hand[0].add(scoop);
+  {const sp=[cyl([0.0,-0.03,0],[0.0,-0.2,0.02],0.012,0x7b5a32,6)];
+   const bowl=new THREE.SphereGeometry(0.075,14,8,0,Math.PI*2,Math.PI/2,Math.PI/2);
+   sp.push(part(bowl,0x2f7fbf,M(0.02,-0.26,0.03,0,0,-0.6)));
+   sp.push(part(new THREE.CylinderGeometry(0.068,0.068,0.01,14),0xa8763c,M(0.02,-0.255,0.03,0,0,-0.6)));
+   const m=new THREE.Mesh(merge(sp),vcMat({side:THREE.DoubleSide}));m.castShadow=true;scoop.add(m);}
+  scoop.visible=false;
+  // 腿
+  const hip=[],knee=[];
+  for(const s of[1,-1]){
+    const g=G(pelvis,0,-0.03,0.09*s);
+    mk(g,limb(0.068,0.054,0.42,lower,null,1));
+    const k=G(g,0,-0.42,0);
+    if(ch.pantsRolled)mk(k,limb(0.06,0.046,0.4,ch.pants,ch.boots,0.22));
+    else mk(k,limb(0.054,0.046,0.4,ch.waders?ch.wader:ch.boots,null,1));
+    const bp=[part(B,ch.boots,M(0.045,-0.425,0,0,0,0,0.25,0.075,0.1)),part(S(),ch.boots,M(0.16,-0.425,0,0,0,0,0.055,0.037,0.05))];
+    if(!ch.waders)bp.push(part(new THREE.CylinderGeometry(0.058,0.058,0.03,12),ch.boots,M(0,-0.1,0)));
+    mk(k,merge(bp));
+    hip.push(g);knee.push(k);
+  }
+  root.scale.setScalar(ch.scale);
+  return {root,scoop,cur:{},J:{pelvis,torso,head,sh,el,hand,hip,knee}};
+}
+const STAND_POSE={tz:-0.12,ty:0,shR:0.25,elR:0.5,abR:-0.1,shL:0.25,elL:0.5,abL:0.1,hipR:0.05,kneeR:-0.1,hipL:0.05,kneeL:-0.1,pelY:-0.01};
+const THROW_KEYS=[
+ [0,   {tz:-0.6,ty:-0.25,shR:1.0,elR:0.25,abR:-0.05,shL:0.7,elL:0.5,abL:0.05,hipR:0.4,kneeR:-0.55,hipL:0.3,kneeL:-0.5,pelY:-0.09}],
+ [0.32,{tz:-0.25,ty:-0.35,shR:0.2,elR:1.4,abR:-0.25,shL:0.4,elL:0.7,abL:0.05,hipR:0.2,kneeR:-0.3,hipL:0.15,kneeL:-0.25,pelY:-0.04}],
+ [0.52,{tz:-0.05,ty:-0.6,shR:-0.6,elR:1.0,abR:-0.4,shL:0.6,elL:0.3,abL:0.1,hipR:0.1,kneeR:-0.15,hipL:0.1,kneeL:-0.12,pelY:-0.01}],
+ [0.68,{tz:-0.3,ty:0.4,shR:2.0,elR:0.1,abR:-0.2,shL:-0.3,elL:0.3,abL:0.15,hipR:0.25,kneeR:-0.25,hipL:0.0,kneeL:-0.1,pelY:-0.03}],
+ [0.82,{tz:-0.35,ty:0.2,shR:1.4,elR:0.3,abR:-0.1,shL:0.2,elL:0.4,abL:0.1,hipR:0.3,kneeR:-0.35,hipL:0.15,kneeL:-0.3,pelY:-0.05}],
+ [1,null]];
+function samplePose(keys,p){
+  for(let i=0;i<keys.length-1;i++){const a=keys[i][0],b=keys[i+1][0];
+    if(p>=a&&p<=b){const A=keys[i][1],B=keys[i+1][1]||keys[0][1],t=smooth(0,1,(p-a)/(b-a)),o={};for(const k in A)o[k]=lerp(A[k],B[k],t);return o;}}
+  return keys[0][1];}
+function polePose(s){return {tz:-0.3-0.15*s,ty:-0.35,shR:0.15+0.45*s,elR:0.8-0.2*s,abR:-0.3,shL:0.55+0.35*s,elL:1.0,abL:-0.55,hipR:0.25,kneeR:-0.3,hipL:-0.15,kneeL:-0.1,pelY:-0.03-0.02*s};}
+function applyPose(P,t,k){const c=P.cur;for(const key in t)c[key]=c[key]==null?t[key]:lerp(c[key],t[key],k);const J=P.J;
+  J.pelvis.position.y=0.9+c.pelY;J.torso.rotation.set(0,c.ty,c.tz);J.head.rotation.set(0,-c.ty*0.5,-c.tz*0.55);
+  J.sh[0].rotation.set(c.abR,0,c.shR);J.sh[1].rotation.set(c.abL,0,c.shL);J.el[0].rotation.z=c.elR;J.el[1].rotation.z=c.elL;
+  J.hip[0].rotation.set(-0.08,0,c.hipR);J.hip[1].rotation.set(0.08,0,c.hipL);J.knee[0].rotation.z=c.kneeR;J.knee[1].rotation.z=c.kneeL;}
+let charIdx=0;try{charIdx=+(localStorage.getItem('pond_char')||0)%3;}catch(e){}
+let P=null;
+function setChar(i){if(P)raft.remove(P.root);charIdx=i;P=buildPerson(CHARS[i]);P.root.position.set(0.45,0.09,-0.05);raft.add(P.root);
+  try{localStorage.setItem('pond_char',i);}catch(e){}
+  const b=document.getElementById('bChar');if(b)b.textContent='👤 換養殖戶（'+CHARS[i].name+'）';}
+setChar(charIdx);
+const poleGeo=new THREE.CylinderGeometry(0.028,0.032,5.2,7);poleGeo.rotateX(Math.PI/2);poleGeo.translate(0,0,0.6);
+const pole=new THREE.Mesh(poleGeo,lamb(0xb79d5c));pole.castShadow=true;scene.add(pole);
+const raftState={a:0,speed:0.045,v:0.045,phase:null,type:null,pt:0,cyc:0,bag:null,from:null,rot0:0,lastRel:-99};
+const _a=new V3(),_b=new V3(),_sd=new V3(),_rt=new V3(),_zn=new V3();
+function releaseFeed(){const rs=raftState;P.J.hand[0].getWorldPosition(_a);
+  _sd.set(0,0,1).applyQuaternion(raft.quaternion);_rt.set(1,0,0).applyQuaternion(raft.quaternion);
+  const fishT=rs.type==='fish',pool=fishT?pelletsF:pelletsS;
+  for(let k=0;k<32;k++){const v=rand(2.5,6),l=rand(-2.2,2.2);pool.spawn(_a.x+rand(-0.05,0.05),_a.y,_a.z+rand(-0.05,0.05),_sd.x*v+_rt.x*l,rand(1.2,2.8),_sd.z*v+_rt.z*l,fishT?25:30);}
+  rs.lastRel=T;_b.copy(_a).addScaledVector(_sd,4);sndScatter(_b.x,_b.z);}
+function splashRing(x,z,n,str){for(let k=0;k<n;k++){const a=rand(0,6.28),sp=rand(0.5,1.4)*str;splash.spawn(x,0.03,z,Math.cos(a)*sp,rand(1.4,3)*str,Math.sin(a)*sp,1);}
+  for(let k=0;k<3;k++)foam.spawn(x+rand(-0.3,0.3),0.06,z+rand(-0.3,0.3),rand(-0.3,0.3),0,rand(-0.3,0.3),rand(4,8));}
+
+/* ---------- 海水閘門 ---------- */
+const gate=new THREE.Group();gate.userData.key='gate';
+const conc=lamb(0xb9b3a6),conc2=lamb(0xa29c8f);
+function box(w,h,d,mat,x,y,z,parent=gate){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
+box(1.6,4.2,4.2,conc,4.4,0.3,55);box(1.6,4.2,4.2,conc,-4.4,0.3,55);
+box(0.3,2.95,6,conc2,3.45,-0.22,50);box(0.3,2.95,6,conc2,-3.45,-0.22,50);
+box(0.3,2.7,8,conc2,3.45,-0.35,61);box(0.3,2.7,8,conc2,-3.45,-0.35,61);
+box(0.45,2.6,0.7,conc,3.8,3.7,55);box(0.45,2.6,0.7,conc,-3.8,3.7,55);
+box(8.4,0.5,0.95,conc,0,5.2,55);
+box(1.3,0.75,0.85,lamb(0x3d6d8f),0,5.82,55);
+box(9.8,0.25,1.4,conc2,0,2.52,53.1);
+const rail=lamb(0x6a7478);
+box(9.8,0.06,0.06,rail,0,3.45,52.45);box(9.8,0.06,0.06,rail,0,3.05,52.45);
+for(let x=-4.8;x<=4.81;x+=1.2)box(0.06,0.95,0.06,rail,x,3.1,52.45);
+const panel=new THREE.Group();gate.add(panel);
+{const ps=[];const bx=new THREE.BoxGeometry(1,1,1);
+ ps.push(part(bx,0x52707c,M(0,0,0,0,0,0,7.2,2.5,0.25)));
+ for(let k=0;k<4;k++)ps.push(part(bx,0x3e5a66,M(0,-1+k*0.66,-0.16,0,0,0,7.2,0.12,0.08)));
+ const st=new THREE.CylinderGeometry(0.07,0.07,4.4,8);
+ ps.push(part(st,0x9aa4a8,M(2.2,1.25+2.2,0)));ps.push(part(st,0x9aa4a8,M(-2.2,1.25+2.2,0)));
+ const pm=new THREE.Mesh(merge(ps),vcMat({shininess:50}));pm.castShadow=true;panel.add(pm);}
+panel.position.set(0,-0.45,55);
+const hwheel=new THREE.Group();hwheel.position.set(0.95,5.85,54.5);gate.add(hwheel);
+{const ps=[part(new THREE.TorusGeometry(0.38,0.035,8,24),0xb33a2a)];
+ for(let k=0;k<3;k++)ps.push(part(new THREE.CylinderGeometry(0.02,0.02,0.76,6),0xb33a2a,M(0,0,0,0,0,k*Math.PI/3)));
+ hwheel.add(new THREE.Mesh(merge(ps),vcMat()));}
+{const c=document.createElement('canvas');c.width=512;c.height=128;const g=c.getContext('2d');
+ g.fillStyle='#1f4f45';g.fillRect(0,0,512,128);g.strokeStyle='#fff';g.lineWidth=6;g.strokeRect(8,8,496,112);
+ g.fillStyle='#fff';g.font='bold 64px "PingFang TC","Noto Sans TC",sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('海水引水閘門',256,66);
+ const sg=new THREE.Mesh(new THREE.PlaneGeometry(4,1),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c)}));
+ sg.position.set(0,5.2,54.51);sg.rotation.y=Math.PI;gate.add(sg);}
+scene.add(gate);
+const gateState={open:false,t:0};
+const PANEL_CLOSED=-0.45,PANEL_LIFT=2.7;
+
+/* ---------- 淡水抽水站 ---------- */
+const pump=new THREE.Group();pump.userData.key='fresh';
+box(2.6,2.2,2.6,lamb(0xcfc8b8),-55.2,2.3,-18,pump);
+{const r=box(3.1,0.12,3.1,lamb(0x7f909a),-55.2,3.45,-18,pump);r.rotation.z=0.12;}
+box(0.9,1.5,0.06,lamb(0x5a6b74),-53.88,2.0,-18,pump).rotation.y=Math.PI/2;
+{const pm=lamb(0x8fa3ad);
+ const p1=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.15,4.6,10),pm);p1.rotation.z=Math.PI/2;p1.position.set(-51.6,0.95,-18);p1.castShadow=true;pump.add(p1);
+ const p2=new THREE.Mesh(new THREE.CylinderGeometry(0.19,0.19,0.25,10),pm);p2.rotation.z=Math.PI/2;p2.position.set(-49.4,0.95,-18);pump.add(p2);
+ const tank=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.5,0.9,14),lamb(0x3a8a5c));tank.position.set(-56.9,1.65,-16.2);tank.castShadow=true;pump.add(tank);}
+scene.add(pump);
+const freshState={on:false,t:0};
+
+/* ---------- 工寮 ---------- */
+const hut=new THREE.Group();hut.userData.key='hut';
+box(4.2,2.6,3.2,lamb(0xd9d2bf),-55,2.5,-54,hut);
+{const r=box(4.8,0.12,3.9,lamb(0x7f8f99),-55,3.95,-54,hut);r.rotation.x=0.14;}
+box(0.9,1.8,0.06,lamb(0x7a5a3a),-54.2,2.1,-52.37,hut);
+box(0.9,0.7,0.06,lamb(0x9fc2d4),-56.2,2.7,-52.37,hut);
+for(let k=0;k<4;k++){const s=box(0.6,0.35,0.45,lamb(0xece5d0),-52.4,1.4+k*0.36,-55.2+(k%2)*0.1,hut);}
+scene.add(hut);
+
+/* ---------- 電線桿 ---------- */
+const poles=[];const poleMat=lamb(0x9a978f);
+for(let z=-45;z<=45;z+=18){
+  const p=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.17,8,8),poleMat);p.position.set(-56.5,5.2,z);p.castShadow=true;p.userData.key='pole';scene.add(p);
+  const ca=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.1,0.1),poleMat);ca.position.set(-56.5,8.8,z);scene.add(ca);
+  poles.push(z);
+}
+for(let i=0;i<poles.length-1;i++)[-0.65,0.65].forEach(o=>{
+  const pts=[];for(let k=0;k<=10;k++){const t=k/10;pts.push(new V3(-56.5+o,8.9-Math.sin(t*Math.PI)*0.6,lerp(poles[i],poles[i+1],t)));}
+  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),cableMat));});
+
+/* ---------- 樹木 ---------- */
+{const tr=[],fo=[];const tg=new THREE.CylinderGeometry(0.14,0.22,2.4,6),fg=new THREE.IcosahedronGeometry(1,1);
+ const greens=[0x4f7a33,0x5d8a3a,0x46702e,0x6a9442];
+ function addTree(x,z,big){const y=0.4,s=big?rand(1.4,2.4):rand(1,1.8);
+   tr.push(part(tg,0x6b5137,M(x,y+1.2*s*0.8,z,0,0,0,s*0.8,s*0.8,s*0.8)));
+   fo.push(part(fg,greens[(Math.random()*4)|0],M(x,y+2.4*s,z,0,rand(0,3),0,s*rand(1.2,1.6),s*rand(1.0,1.3),s*rand(1.2,1.6))));}
+ let n=0;while(n<90){const x=rand(-125,125),z=rand(-125,72),d=Math.max(Math.abs(x),Math.abs(z));if(d<66)continue;addTree(x,z,false);n++;}
+ const rects=[[-240,-30,170,140],[240,-40,170,150],[-30,-245,210,170],[-265,-215,160,150],[250,-235,170,160],[-420,60,180,160],[420,40,170,170]];
+ n=0;while(n<160){const x=rand(-520,520),z=rand(-520,75);if(Math.abs(x)<135&&z>-135)continue;if(rects.some(([rx,rz,w,d])=>Math.abs(x-rx)<w/2&&Math.abs(z-rz)<d/2))continue;addTree(x,z,true);n++;}
+ const t1=new THREE.Mesh(merge(tr),vcMat()),t2=new THREE.Mesh(merge(fo),vcMat({flatShading:true}));
+ t1.castShadow=t2.castShadow=true;scene.add(t1,t2);}
+
+/* ---------- 白鷺鷥 ---------- */
+const egretGeo=(()=>{const ps=[];const S=new THREE.SphereGeometry(0.5,10,8);
+  ps.push(part(S,0xfafafa,M(0,0.78,0,0,0,0.25,0.4,0.17,0.15)));
+  ps.push(cyl([0.15,0.85,0],[0.22,1.15,0],0.035,0xfafafa,6));
+  ps.push(part(S,0xfafafa,M(0.25,1.18,0,0,0,0,0.11,0.09,0.08)));
+  ps.push(part(new THREE.ConeGeometry(0.018,0.17,5),0xe8b830,M(0.38,1.17,0,0,0,-Math.PI/2)));
+  ps.push(cyl([0,0.72,0.04],[0.02,0,0.04],0.012,0x222222,4));ps.push(cyl([0,0.72,-0.04],[-0.02,0,-0.04],0.012,0x222222,4));
+  return merge(ps);})();
+const egretMat=vcMat({shininess:10});
+const egrets=[];
+[[-30,-50.6],[12,-50.4],[50.5,-10],[50.4,30],[-50.5,20],[-50.6,-38],[34,-50.5]].forEach(([x,z])=>{
+  const m=new THREE.Mesh(egretGeo,egretMat);m.scale.setScalar(0.75);m.position.set(x,terrainH(x,z),z);
+  m.rotation.y=Math.atan2(z,-x)+rand(-0.5,0.5);m.userData.key='egret';m.castShadow=true;scene.add(m);egrets.push(m);});
+const flyers=[];
+for(let i=0;i<3;i++){
+  const g=new THREE.Group();g.userData={key:'egret',movable:true};
+  const ps=[];const S=new THREE.SphereGeometry(0.5,10,8);
+  ps.push(part(S,0xfafafa,M(0,0,0,0,0,0,0.42,0.16,0.15)));ps.push(part(S,0xfafafa,M(0.24,0.03,0,0,0,0,0.12,0.1,0.09)));
+  ps.push(part(new THREE.ConeGeometry(0.018,0.17,5),0xe8b830,M(0.38,0.03,0,0,0,-Math.PI/2)));
+  ps.push(cyl([-0.15,-0.02,0.03],[-0.6,-0.04,0.03],0.01,0x222222,4));ps.push(cyl([-0.15,-0.02,-0.03],[-0.6,-0.04,-0.03],0.01,0x222222,4));
+  g.add(new THREE.Mesh(merge(ps),egretMat));
+  const wg=new THREE.BoxGeometry(0.3,0.015,0.8);wg.translate(0,0,0.4);
+  const wl=new THREE.Group(),wr=new THREE.Group();
+  const w1=new THREE.Mesh(wg,lamb(0xf6f6f6));wl.add(w1);const w2=new THREE.Mesh(wg,lamb(0xf6f6f6));w2.rotation.y=Math.PI;w2.position.z=0;wr.add(w2);
+  wl.position.z=0.05;wr.position.z=-0.05;g.add(wl,wr);
+  g.scale.setScalar(1.1);g.rotation.order='YZX';scene.add(g);
+  flyers.push({g,wl,wr,r:rand(35,70),h:rand(10,18),a:rand(0,6.28),w:rand(0.08,0.14)*(i%2?1:-1),cx:rand(-15,15),cz:rand(-15,15)});
+}
+
+/* ---------- 夜間：月亮、星星、堤岸燈 ---------- */
+let night=false,nightK=0;
+const DAY_TOP=new THREE.Color(0x4f93d6),DAY_BOT=new THREE.Color(0xe3edf1),NIGHT_TOP=new THREE.Color(0x040916),NIGHT_BOT=new THREE.Color(0x1b2842);
+const DAY_FOG=SKY_COL.clone(),NIGHT_FOG=new THREE.Color(0x141d2e),UW_NIGHT=new THREE.Color(0x0c1814);
+const moon=new THREE.DirectionalLight(0x9db4ff,0);moon.position.set(-80,120,-60);scene.add(moon);
+const stars=(()=>{const n=800,p=new Float32Array(n*3);
+  for(let i=0;i<n;i++){const y=0.06+0.94*Math.pow(Math.random(),0.7),th=rand(0,6.2832),r=Math.sqrt(1-y*y);p[i*3]=Math.cos(th)*r*1800;p[i*3+1]=y*1800;p[i*3+2]=Math.sin(th)*r*1800;}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(p,3));
+  const m=new THREE.Points(g,new THREE.PointsMaterial({color:0xffffff,size:2.2,sizeAttenuation:false,transparent:true,opacity:0,fog:false,depthWrite:false}));
+  sky.add(m);return m;})();
+const moonDisc=new THREE.Mesh(new THREE.CircleGeometry(38,40),new THREE.MeshBasicMaterial({color:0xfff4d2,fog:false,transparent:true,opacity:0,depthWrite:false}));
+moonDisc.position.set(-0.45,0.62,-0.64).normalize().multiplyScalar(1700);moonDisc.lookAt(0,0,0);sky.add(moonDisc);
+const lamps=[];
+function addLamp(x,y,z){const bulb=new THREE.Mesh(new THREE.SphereGeometry(0.17,10,8),new THREE.MeshBasicMaterial({color:0x77706a}));bulb.position.set(x,y,z);scene.add(bulb);
+  const L=new THREE.PointLight(0xffc27a,0,40,2);L.position.set(x,y-0.35,z);scene.add(L);lamps.push({bulb,L});}
+addLamp(-54.2,3.75,-52.05);
+addLamp(0,6.65,54.3);
+addLamp(-53.6,3.65,-16.55);
+for(const x of[-24,24]){
+  const pm=lamb(0x8a8f92);
+  const p=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.11,5.2,8),pm);p.position.set(x,3.8,-55.6);p.castShadow=true;scene.add(p);
+  const arm=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.08,1.3),pm);arm.position.set(x,6.35,-55.05);scene.add(arm);
+  addLamp(x,6.2,-54.45);}
+const hutWin=new THREE.Mesh(new THREE.PlaneGeometry(0.86,0.66),new THREE.MeshBasicMaterial({color:0xffcf80,transparent:true,opacity:0}));
+hutWin.position.set(-56.2,2.7,-52.33);scene.add(hutWin);
+function updateNight(dt){
+  nightK+=((night?1:0)-nightK)*Math.min(1,dt*1.5);
+  const dk=1-nightK;
+  sun.intensity=0.95*dk;hemi.intensity=0.72*dk+0.13;moon.intensity=0.32*nightK;
+  const u=sky.material.uniforms;u.top.value.copy(DAY_TOP).lerp(NIGHT_TOP,nightK);u.bot.value.copy(DAY_BOT).lerp(NIGHT_BOT,nightK);u.glow.value=dk;
+  skyFog.color.copy(DAY_FOG).lerp(NIGHT_FOG,nightK);uwFog.color.copy(UW_COL).lerp(UW_NIGHT,nightK);
+  scene.background.copy(isUnder?uwFog.color:skyFog.color);
+  stars.material.opacity=nightK;moonDisc.material.opacity=nightK;
+  for(const l of lamps){l.L.intensity=nightK*1.5;l.bulb.material.color.setRGB(0.47+0.53*nightK,0.44+0.42*nightK,0.4+0.12*nightK);}
+  hutWin.material.opacity=nightK*0.92;
+}
+
+/* ---------- 相機控制（自製，支援觸控） ---------- */
+const cam={target:new V3(0,0,0),r:125,theta:0.75,phi:0.95};
+let goal=null,follow=null;
+function setGoal(t,r,theta,phi){goal={t:t.clone(),r,theta,phi};}
+const ptrs=new Map();let pinch0=0,mid0=null,downInfo=null;
+canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===1)downInfo={x:e.clientX,y:e.clientY,t:performance.now(),moved:0,btn:e.button,shift:e.shiftKey};
+  if(ptrs.size===2){const [a,b]=[...ptrs.values()];pinch0=Math.hypot(a.x-b.x,a.y-b.y);mid0={x:(a.x+b.x)/2,y:(a.y+b.y)/2};if(downInfo)downInfo.moved=99;}
+  hideHint();});
+function pan(dx,dy){
+  const k=cam.r*0.0016;const ct=Math.cos(cam.theta),st=Math.sin(cam.theta);
+  cam.target.x-= ct*dx*k; cam.target.z-= -st*dx*k;
+  cam.target.x+= -st*dy*k; cam.target.z+= -ct*dy*k;
+  cam.target.x=clamp(cam.target.x,-160,160);cam.target.z=clamp(cam.target.z,-160,200);
+  follow=null;goal=null;
+}
+canvas.addEventListener('pointermove',e=>{
+  const p=ptrs.get(e.pointerId);if(!p)return;
+  const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
+  if(downInfo)downInfo.moved+=Math.abs(dx)+Math.abs(dy);
+  if(ptrs.size===1){
+    if(downInfo&&(downInfo.btn===2||downInfo.shift))pan(dx,dy);
+    else{cam.theta-=dx*0.006;cam.phi=clamp(cam.phi-dy*0.005,0.08,1.72);goal=null;}
+  }else if(ptrs.size===2){
+    const [a,b]=[...ptrs.values()];const d=Math.hypot(a.x-b.x,a.y-b.y),mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+    if(pinch0>0){cam.r=clamp(cam.r*pinch0/d,2.5,420);}
+    if(mid0)pan(mid.x-mid0.x,mid.y-mid0.y);
+    pinch0=d;mid0=mid;goal=null;
+  }
+});
+function up(e){
+  if(downInfo&&ptrs.size===1&&downInfo.moved<8&&performance.now()-downInfo.t<350)pick(e.clientX,e.clientY);
+  ptrs.delete(e.pointerId);if(ptrs.size<2){pinch0=0;mid0=null;}
+  if(ptrs.size===0)downInfo=null;
+  else{const [a]=[...ptrs.values()];downInfo={x:a.x,y:a.y,t:0,moved:99,btn:0};}
+}
+canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+canvas.addEventListener('wheel',e=>{e.preventDefault();cam.r=clamp(cam.r*(1+e.deltaY*0.0012),2.5,420);goal=null;hideHint();},{passive:false});
+
+/* ---------- 點選介紹 ---------- */
+const INFO={
+ pond:['魚塭（1 公頃）','池面 100 m × 100 m＝10,000 m²，也就是 1 公頃；水深約 1.6 m，四周是寬約 5 m 的土堤，堤頂可走人、搬飼料。池水是淡水與海水混合的半鹹水，適合虱目魚、草蝦、文蛤混養。'],
+ milkfish:['虱目魚','廣鹽性魚類，從淡水到海水都能生活，是台灣南部魚塭的主角。成群在中上層洄游；竹筏投餵時會聚過來搶食，溶氧不足時會浮到水面「浮頭」。（模型已放大約 2 倍方便觀看）'],
+ shrimp:['草蝦','斑節對蝦，身上深淺相間的橫紋是特徵。底棲、偏夜行性，平常在池底爬行覓食，受驚會彈尾往後跳。偏好鹽度約 15–25‰。（模型已放大約 3 倍）'],
+ clam:['蛤蠣（文蛤）','半埋在池底泥沙裡，用水管濾食水中的浮游藻類，有助淨化水質；與虱目魚混養是台灣常見的模式。偶爾會冒出小氣泡。（模型已放大約 4 倍）'],
+ aerator:['水車（葉輪增氧機）','馬達帶動葉輪拍打水面，把空氣打進水裡提高溶氧。四台順著同一方向擺放，讓整池水形成環流（看水面白沫的流向）。關掉水車，溶氧會慢慢下降。'],
+ raft:['餵料竹筏','竹竿綑成的筏子，養殖戶撐篙在池中巡迴。筏尾堆著一袋袋飼料：綠標是虱目魚的浮性飼料，紅標是草蝦的沉性飼料。'],
+ bagF:['虱目魚飼料（浮性）','一袋 25 kg 的浮性顆粒，撒下去會浮在水面，虱目魚衝上來搶食，常常整條躍出水面。'],
+ bagS:['草蝦飼料（沉性）','一袋 20 kg 的沉性小顆粒，入水後沉到池底，給在底部爬行的草蝦吃。'],
+ gate:['海水引水閘門','連通外海水道的水門。漲潮時拉起閘板讓海水流進來，提高池水鹽度；放下閘板則與外海隔開。'],
+ fresh:['淡水抽水站','抽淡水注入魚塭，用來降低鹽度、補充蒸發掉的水。和海水閘門搭配，就能把池水調在理想的半鹹水範圍。'],
+ hut:['工寮','堆放飼料、工具與水車電源開關的小屋，養殖戶夜間巡池也在這裡休息。'],
+ sea:['外海','閘門外的海水水道與海面，鹽度約 34‰。外海水位略高於池水，打開閘門海水就會流入。'],
+ egret:['白鷺鷥','魚塭常見的訪客，喜歡站在池邊淺水處等機會捕小魚小蝦。'],
+ pole:['電線桿','供電給水車與抽水馬達。'],
+};
+const raycaster=new THREE.Raycaster();
+const poleObjs=[];scene.traverse(o=>{if(o.userData&&o.userData.key==='pole')poleObjs.push(o);});
+function getPickables(){return [...(HV.on&&TRUCK?[TRUCK.g,netMesh]:[]),...birds.map(b=>b.o.root),...cctvs.map(c=>c.g),terrain,pond,sea,clams,gate,pump,hut,raft,...aerators.map(a=>a.g),...fishes.map(f=>f.g),...shrimps.map(s=>s.m),...egrets,...flyers.map(f=>f.g),...poleObjs];}
+function keyOf(o){while(o){if(o.userData&&o.userData.key)return o;o=o.parent;}return null;}
+let selected=null;
+function pick(x,y){
+  raycaster.setFromCamera({x:x/innerWidth*2-1,y:-(y/innerHeight)*2+1},camera);
+  const hits=raycaster.intersectObjects(getPickables(),true);if(!hits.length)return;
+  const weak=k=>k==='pond'||k==='sea'||k==='terrain';
+  let best=null;
+  for(const h of hits){const o=keyOf(h.object);if(!o)continue;if(!best)best={o,h};if(!weak(o.userData.key)){if(h.distance<best.h.distance+40)best={o,h};break;}}
+  if(!best)return;
+  if(best.o===pond){tapWater(best.h.point);return;}
+  if(best.o.userData.key==='cctv'){enterCCTV(best.o.userData.cc,false);return;}
+  let key=best.o.userData.key;
+  if(key==='terrain'){const p=best.h.point;const d=Math.max(Math.abs(p.x),Math.abs(p.z));key=d<58?'pond':(p.z>70?'sea':null);}
+  if(!key)return;
+  showInfo(key,best.o);
+}
+function showInfo(key,obj){
+  let t,d;
+  if(key==='farmer'){const c=CHARS[charIdx];t='養殖戶・'+c.name;d=c.desc+' 點下方「👤」可以換人。';obj=raft;}
+  else{[t,d]=INFO[key];if(key==='bagF')d+=` 竹筏上還有 ${bags.fish.stack.length} 袋。`;if(key==='bagS')d+=` 竹筏上還有 ${bags.shrimp.stack.length} 袋。`;}
+  $('#info h3').textContent=t;$('#info p').textContent=d;
+  selected=obj&&obj.userData.movable?obj:null;
+  const isBird=key.startsWith('bird_')||key==='egret';$('#ccFindBtn').style.display=isBird?'inline-block':'none';selectedBird=isBird?obj:null;
+  if(selected&&key.startsWith('bird_')){follow=selected;setGoal(selected.position,4,cam.theta,1.3);setView(null);}
+  if(selected&&(selected.userData.key==='milkfish'||selected.userData.key==='shrimp')){follow=selected;setGoal(selected.position,selected.userData.key==='shrimp'?3.5:4.5,cam.theta,1.25);setView(null);}
+  $('#followBtn').style.display=selected?'inline-block':'none';
+  $('#info').classList.remove('hide');
+}
+$('#infoClose').onclick=()=>$('#info').classList.add('hide');
+$('#followBtn').onclick=()=>{if(!selected)return;follow=selected;
+  const k=selected.userData.key;setGoal(selected.position,k==='raft'?14:k==='egret'?12:4,cam.theta,k==='raft'?1.05:1.25);setView(null);};
+
+/* ---------- 視角 ---------- */
+function setView(v){document.querySelectorAll('.views button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));}
+document.querySelectorAll('.views button').forEach(b=>b.onclick=()=>{
+  const v=b.dataset.v;follow=null;setView(v);
+  if(v==='all')setGoal(new V3(0,0,0),125,0.75,0.95);
+  if(v==='gate')setGoal(new V3(0,1.5,55),24,Math.PI+0.55,1.12);
+  if(v==='aer')setGoal(new V3(aerators[0].x,0.3,aerators[0].z),11,2.3,1.15);
+  if(v==='raft'){follow=raft;setGoal(raft.position,9,cam.theta,1.12);}
+  if(v==='under'){const f=fishes[(Math.random()*fishes.length)|0];follow=f.g;setGoal(f.g.position,7,cam.theta,1.62);}
+  if(v==='side')setGoal(new V3(-20,0.5,-50),26,Math.PI*0.85,1.25);
+});
+
+/* ---------- 按鈕 ---------- */
+const bGate=$('#bGate'),bFresh=$('#bFresh'),bAer=$('#bAer'),bFeedF=$('#bFeedF'),bFeedS=$('#bFeedS'),bChar=$('#bChar'),bLbl=$('#bLbl');
+bGate.onclick=()=>{sndClank();gateState.open=!gateState.open;bGate.textContent='🌊 海水閘門：'+(gateState.open?'開':'關');bGate.classList.toggle('on',gateState.open);};
+bFresh.onclick=()=>{freshState.on=!freshState.on;bFresh.textContent='💧 淡水抽水：'+(freshState.on?'開':'關');bFresh.classList.toggle('on',freshState.on);};
+let aerOn=true,aerF=1;
+bAer.onclick=()=>{aerOn=!aerOn;bAer.textContent='⚙️ 水車：'+(aerOn?'開':'關');bAer.classList.toggle('on',aerOn);};
+function toast(msg){const h=$('#hint');h.textContent=msg;h.style.opacity='1';clearTimeout(toast.t);toast.t=setTimeout(()=>h.style.opacity='0',2600);}
+function updateFeedButtons(){const rs=raftState;
+  [['fish',bFeedF,'🐟 餵虱目魚'],['shrimp',bFeedS,'🦐 餵草蝦']].forEach(([t,btn,lb])=>{
+    const n=bags[t].stack.length,act=!!rs.phase&&rs.type===t;
+    btn.textContent=act?lb+'中…':(n?`${lb}（${n}袋）`:`${lb}・去工寮補貨`);
+    btn.classList.toggle('on',act);btn.style.opacity=rs.phase&&!act?0.45:1;});}
+function startFeed(type){if(HV.on){toast('收成中，先不餵料');return;}const rs=raftState;if(rs.phase)return;const b=bags[type];
+  if(!b.stack.length){restock(type);updateFeedButtons();toast(type==='fish'?'已從工寮搬來 3 袋虱目魚飼料':'已從工寮搬來 3 袋草蝦飼料');return;}
+  rs.type=type;rs.bag=b.stack.pop();rs.from=rs.bag.position.clone();rs.rot0=rs.bag.rotation.y;rs.phase='fetch';rs.pt=0;
+  updateFeedButtons();schools.forEach(s=>s.timer=0);
+  // 鏡頭轉到養殖戶背後，看他把飼料撒向池面
+  const sd=new V3(0,0,1).applyQuaternion(raft.quaternion);follow=null;
+  setGoal(raft.position.clone().addScaledVector(sd,2.6).setY(0.6),10.5,Math.atan2(-sd.x,-sd.z)+0.35,1.12);setView(null);}
+bFeedF.onclick=()=>startFeed('fish');bFeedS.onclick=()=>startFeed('shrimp');
+function renderPicker(){const box=$('#chars');box.innerHTML='';CHARS.forEach((c,i)=>{const d=document.createElement('button');d.className='charCard'+(i===charIdx?' on':'');
+  d.innerHTML=`<span class="em">${c.emoji}</span><span class="nm">${c.name}</span><span class="ds">${c.desc}</span>`;
+  d.onclick=()=>{setChar(i);renderPicker();follow=raft;setGoal(raft.position,6.5,cam.theta,1.2);setView('raft');};box.appendChild(d);});}
+bChar.onclick=()=>{renderPicker();$('#picker').classList.remove('hide');};
+$('#pickClose').onclick=()=>$('#picker').classList.add('hide');
+$('#picker').addEventListener('click',e=>{if(e.target.id==='picker')$('#picker').classList.add('hide');});
+updateFeedButtons();bChar.textContent='👤 換養殖戶（'+CHARS[charIdx].name+'）';
+let showLabels=true;
+bLbl.onclick=()=>{showLabels=!showLabels;toast(showLabels?'顯示地點標籤':'隱藏地點標籤');bLbl.classList.toggle('on',showLabels);$('#labels').style.display=showLabels?'block':'none';};
+
+/* ---------- 標籤 ---------- */
+const labels=[];
+function addLabel(text,getPos,dim){const el=document.createElement('div');el.className='lbl'+(dim?' dim':'');el.textContent=text;$('#labels').appendChild(el);labels.push({el,getPos});}
+addLabel('🌊 海水引水閘門',()=>new V3(0,7,55));
+addLabel('外海',()=>new V3(0,3,120),true);
+addLabel('💧 淡水抽水站',()=>new V3(-55,4.6,-18));
+addLabel('🏠 工寮',()=>new V3(-55,5,-54));
+aerators.forEach((a,i)=>addLabel('⚙️ 水車 '+(i+1),()=>new V3(a.x,2.2,a.z)));
+addLabel('🛶 餵料竹筏',()=>raft.position.clone().add(new V3(0,2.7,0)));
+addLabel('◀ 100 m ▶ ・ 1 公頃',()=>HV.on?null:new V3(0,2.2,-55),true);
+const _v=new V3();
+function updateLabels(){
+  if(!showLabels||cctvOn)return;
+  const uw=isUnder;
+  for(const L of labels){
+    const p=L.getPos();if(!p){L.el.style.display='none';continue;}_v.copy(p).project(camera);
+    const dist=camera.position.distanceTo(p);
+    if(_v.z>1||uw||dist>330||Math.abs(_v.x)>1.1||Math.abs(_v.y)>1.1){L.el.style.display='none';continue;}
+    L.el.style.display='block';
+    L.el.style.transform=`translate(${(_v.x+1)/2*innerWidth}px,${(1-_v.y)/2*innerHeight}px) translate(-50%,-130%)`;
+  }
+}
+
+/* ---------- 更多選單 ---------- */
+const moreMenu=$('#moreMenu');
+$('#bMore').onclick=e=>{e.stopPropagation();moreMenu.classList.toggle('show');};
+document.addEventListener('pointerdown',e=>{if(moreMenu.classList.contains('show')&&!moreMenu.contains(e.target)&&e.target.id!=='bMore')moreMenu.classList.remove('show');});
+moreMenu.addEventListener('click',e=>{if(e.target.closest('button'))setTimeout(()=>moreMenu.classList.remove('show'),150);});
+function openModal(id){$('#'+id).classList.remove('hide');}
+function closeModal(id){$('#'+id).classList.add('hide');}
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.add('hide');}));
+
+/* ---------- 日夜切換 ---------- */
+const bNight=$('#bNight');
+bNight.onclick=()=>{night=!night;bNight.classList.toggle('on',night);bNight.textContent=night?'☀️ 白天':'🌙 夜間';
+  toast(night?'入夜了：草蝦出來活動，池水溶氧會下降，記得開水車':'天亮了');};
+
+/* ---------- 環境音效（全部由程式即時合成，沒有音檔） ---------- */
+let actx=null,snd=null,soundOn=true,WB=null,BB=null,simGF=0,simFF=0,sndAcc=0;
+try{soundOn=localStorage.getItem('pond_sound')!=='0';}catch(e){}
+const _sv=new V3();
+const AC=()=>{try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();}catch(e){}return actx;};
+function whiteBuf(ctx,sec){const n=ctx.sampleRate*sec|0,b=ctx.createBuffer(1,n,ctx.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=Math.random()*2-1;return b;}
+function brownBuf(ctx,sec){const n=ctx.sampleRate*sec|0,b=ctx.createBuffer(1,n,ctx.sampleRate),d=b.getChannelData(0);let last=0;for(let i=0;i<n;i++){last=(last+0.02*(Math.random()*2-1))/1.02;d[i]=last*3.5;}return b;}
+function startSound(){const ctx=AC();if(!ctx||snd)return;
+  try{
+  WB=WB||whiteBuf(ctx,2);BB=BB||brownBuf(ctx,4);
+  const out=ctx.createGain();out.gain.value=0;out.gain.linearRampToValueAtTime(0.9,ctx.currentTime+1.5);
+  const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=16000;out.connect(lp);lp.connect(ctx.destination);
+  const nodes=[];
+  const loop=(buf,rate,type,freq,q)=>{const s=ctx.createBufferSource();s.buffer=buf;s.loop=true;s.playbackRate.value=rate;const f=ctx.createBiquadFilter();f.type=type;f.frequency.value=freq;if(q)f.Q.value=q;
+    const g=ctx.createGain();g.gain.value=0;s.connect(f);f.connect(g);g.connect(out);s.start(0,Math.random()*1.5);nodes.push(s);return g;};
+  const osc=(type,freq,dest)=>{const o=ctx.createOscillator();o.type=type;o.frequency.value=freq;o.connect(dest);o.start();nodes.push(o);return o;};
+  const wind=loop(BB,1,'lowpass',420),lap=loop(BB,1.6,'bandpass',650,0.7),sea=loop(BB,0.7,'lowpass',800);
+  const aer=loop(WB,1,'bandpass',1300,0.8),gate=loop(WB,0.6,'lowpass',1400),pump=loop(WB,1,'highpass',2400);
+  const hf=ctx.createBiquadFilter();hf.type='lowpass';hf.frequency.value=240;const hum=ctx.createGain();hum.gain.value=0;hf.connect(hum);hum.connect(out);osc('sawtooth',98,hf);
+  const amG=ctx.createGain();amG.gain.value=0;amG.connect(aer.gain);osc('sine',5.5,amG);   // 葉輪拍水的節奏
+  const swG=ctx.createGain();swG.gain.value=0;swG.connect(sea.gain);osc('sine',0.11,swG);  // 浪潮起伏
+  const lapG=ctx.createGain();lapG.gain.value=0;lapG.connect(lap.gain);osc('sine',0.37,lapG);
+  snd={out,lp,wind,lap,sea,aer,gate,pump,hum,amG,swG,lapG,nodes,birdT:2,crT:1,frogT:3,egT:12};
+  }catch(e){snd=null;}}
+function stopSound(){if(!snd)return;const a=snd;snd=null;try{a.out.gain.linearRampToValueAtTime(0,actx.currentTime+0.4);}catch(e){}
+  setTimeout(()=>{a.nodes.forEach(n=>{try{n.stop();}catch(e){}});try{a.lp.disconnect();}catch(e){}},600);}
+const earPos=()=>cctvOn&&!ccSplit?cctvs[ccCur].cam.position:camera.position;
+const att=(x,y,z,r)=>{const d=earPos().distanceTo(_sv.set(x,y,z));return 1/(1+(d/r)*(d/r));};
+function burst(vol,freq,dur,type='lowpass',delay=0){if(!snd||vol<0.004)return;const ctx=actx,t=ctx.currentTime+delay,s=ctx.createBufferSource();s.buffer=WB;
+  const f=ctx.createBiquadFilter();f.type=type;f.frequency.value=freq;const g=ctx.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+0.008);g.gain.exponentialRampToValueAtTime(0.0008,t+dur);
+  s.connect(f);f.connect(g);g.connect(snd.out);s.start(t,Math.random()*1.5);s.stop(t+dur+0.05);}
+function tone(vol,f0,f1,dur,type='sine',delay=0){if(!snd||vol<0.004)return;const ctx=actx,t=ctx.currentTime+delay,o=ctx.createOscillator(),g=ctx.createGain();o.type=type;
+  o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f1,t+dur);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+0.01);g.gain.exponentialRampToValueAtTime(0.0008,t+dur);
+  o.connect(g);g.connect(snd.out);o.start(t);o.stop(t+dur+0.05);}
+function sndSplash(x,z,big){const a=att(x,0,z,big?18:12);burst((big?0.5:0.28)*a,big?900:1500,big?0.35:0.16);tone(0.12*a,big?420:700,big?120:220,0.14);}
+function sndPlop(x,z){const a=att(x,0,z,30);tone(0.3*a,650,150,0.13);burst(0.15*a,1800,0.1);}
+function sndScatter(x,z){const a=att(x,0,z,16);for(let i=0;i<20;i++)burst(0.07*a,3500,0.03,'highpass',0.4+Math.random()*0.55);}
+function sndBird(){const a=0.05*(1-nightK);const b=rand(2400,3600),n=2+(Math.random()*3|0);for(let i=0;i<n;i++)tone(a,b,b*rand(1.2,1.5),0.09,'sine',i*0.13);}
+function sndEgret(){tone(0.05*(1-nightK),380,250,0.24,'sawtooth');tone(0.03*(1-nightK),370,240,0.2,'sawtooth',0.32);}
+function sndCricket(){const a=0.028*nightK,f=rand(4300,4900);for(let i=0;i<4;i++)tone(a,f,f*0.98,0.03,'sine',i*0.055);}
+function sndFrog(){const a=0.07*nightK,f=rand(170,220);for(let i=0;i<2;i++)tone(a,f,f*0.8,0.1,'square',i*0.15);}
+function sndClank(){const a=att(0,4,55,28);tone(0.15*a,180,110,0.25,'square');burst(0.2*a,600,0.2);}
+function sndShutter(){const ctx=AC();if(!ctx)return;try{const t=ctx.currentTime;WB=WB||whiteBuf(ctx,2);
+  for(const d of[0,0.07]){const s=ctx.createBufferSource(),g=ctx.createGain(),hp=ctx.createBiquadFilter();hp.type='highpass';hp.frequency.value=2000;s.buffer=WB;
+    g.gain.setValueAtTime(0.5,t+d);g.gain.exponentialRampToValueAtTime(0.001,t+d+0.05);s.connect(hp);hp.connect(g);g.connect(ctx.destination);s.start(t+d);s.stop(t+d+0.06);}}catch(e){}}
+function updateSound(dt){if(!snd)return;
+  snd.birdT-=dt;if(snd.birdT<0){snd.birdT=rand(3,9);if(nightK<0.5)sndBird();}
+  snd.egT-=dt;if(snd.egT<0){snd.egT=rand(15,35);if(nightK<0.5)sndEgret();}
+  snd.crT-=dt;if(snd.crT<0){snd.crT=rand(0.2,0.8);if(nightK>0.3)sndCricket();}
+  snd.frogT-=dt;if(snd.frogT<0){snd.frogT=rand(1.5,5);if(nightK>0.3)sndFrog();}
+  sndAcc+=dt;if(sndAcc<0.1)return;sndAcc=0;
+  const t=actx.currentTime,set=(p,v)=>p.setTargetAtTime(v,t,0.2),cp=earPos();
+  let aP=0;for(const a of aerators){const dx=cp.x-a.x,dz=cp.z-a.z;aP+=1/(1+(dx*dx+cp.y*cp.y+dz*dz)/144);}aP=Math.min(1,aP);
+  set(snd.aer.gain,0.32*aerF*aP);set(snd.amG.gain,0.16*aerF*aP);set(snd.hum.gain,0.09*aerF*aP);
+  const ds=Math.max(0,62-cp.z),seaP=1/(1+(ds/45)*(ds/45));set(snd.sea.gain,0.3*seaP);set(snd.swG.gain,0.18*seaP);
+  const gd=cp.distanceTo(_sv.set(0,0.5,55));set(snd.gate.gain,0.4*simGF/(1+(gd/16)*(gd/16)));
+  const pd=cp.distanceTo(_sv.set(-50,1,-18));set(snd.pump.gain,0.12*simFF/(1+(pd/12)*(pd/12)));
+  set(snd.wind.gain,0.1+0.12*Math.min(1,Math.max(0,cp.y)/60));set(snd.lap.gain,0.05);set(snd.lapG.gain,0.035);
+  set(snd.lp.frequency,isUnder?420:16000);}
+const bSound=$('#bSound');
+function setSound(on,save){soundOn=on;bSound.classList.toggle('on',on);bSound.textContent='🔊 環境音效：'+(on?'開':'關');if(on)startSound();else stopSound();
+  if(save){try{localStorage.setItem('pond_sound',on?'1':'0');}catch(e){}}}
+bSound.onclick=()=>setSound(!soundOn,true);
+bSound.classList.toggle('on',soundOn);bSound.textContent='🔊 環境音效：'+(soundOn?'開':'關');
+if(soundOn){const kick=()=>{document.removeEventListener('pointerdown',kick,true);if(soundOn&&!snd)startSound();};document.addEventListener('pointerdown',kick,true);}
+document.addEventListener('visibilitychange',()=>{if(!actx)return;try{if(document.hidden)actx.suspend();else if(soundOn)actx.resume();}catch(e){}});
+
+/* ---------- 點水面：漣漪、嚇魚 ---------- */
+const ripples=[];const ripGeo=new THREE.RingGeometry(0.9,1,48);ripGeo.rotateX(-Math.PI/2);
+for(let i=0;i<12;i++){const m=new THREE.Mesh(ripGeo,new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0,depthWrite:false}));m.visible=false;m.renderOrder=3;scene.add(m);ripples.push({m,t:0,size:1});}
+let ripI=0;
+function ripple(x,z,size=1){const r=ripples[ripI++%ripples.length];r.m.position.set(x,0.08,z);r.t=0;r.size=size;r.m.visible=true;}
+function updateRipples(dt){for(const r of ripples){if(!r.m.visible)continue;r.t+=dt;const k=r.t/1.8;if(k>=1){r.m.visible=false;continue;}r.m.scale.setScalar(0.25+k*5*r.size);r.m.material.opacity=0.55*(1-k);}}
+function tapWater(p){lastTap={x:p.x,z:p.z,t:T};ripple(p.x,p.z,1);setTimeout(()=>ripple(p.x,p.z,0.6),200);sndPlop(p.x,p.z);
+  for(let k=0;k<6;k++)splash.spawn(p.x,0.03,p.z,rand(-0.4,0.4),rand(0.8,1.6),rand(-0.4,0.4),0.5);
+  for(const f of fishes){if(f.jump)continue;const dx=f.pos.x-p.x,dz=f.pos.z-p.z,d=Math.hypot(dx,dz);
+    if(d<9){const k=(9-d)/9*5/(d+0.01);f.vel.x+=dx*k;f.vel.z+=dz*k;f.vel.y-=0.6*(9-d)/9;}}
+  for(const s of shrimps){const dx=s.pos.x-p.x,dz=s.pos.z-p.z;if(dx*dx+dz*dz<36){s.yaw=Math.atan2(dz,-dx);s.flick=0.35;}}}
+
+/* ---------- 跟拍提示列 ---------- */
+const FOLLOW_NAMES={milkfish:'虱目魚',shrimp:'草蝦',raft:'餵料竹筏',egret:'白鷺鷥'};
+let lastFollow;
+function updateFollowBar(){const k=follow&&!saver?follow:null;if(k===lastFollow)return;lastFollow=k;const fb=$('#followBar');
+  if(k){$('#fName').textContent=FOLLOW_NAMES[k.userData.key]||'';fb.classList.add('show');}else fb.classList.remove('show');}
+$('#fX').onclick=()=>{follow=null;goal=null;};
+
+/* ---------- 拍照 ---------- */
+let wantShot=false,shotBlob=null,shotUrl=null;
+$('#bPhoto').onclick=()=>{wantShot=true;};
+function takePhoto(){const src=renderer.domElement,c=document.createElement('canvas');c.width=src.width;c.height=src.height;const g=c.getContext('2d');g.drawImage(src,0,0);
+  const d=new Date(),p2=n=>String(n).padStart(2,'0'),stamp=`${d.getFullYear()}/${p2(d.getMonth()+1)}/${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
+  const l1='🐟 故鄉魚塭 · '+stamp,l2=`${cctvOn?(ccSplit?'監視器四分割 · ':'監視器 CAM'+(ccCur+1)+' · '):''}鹽度 ${S.toFixed(1)}‰ · 溶氧 ${DO.toFixed(1)} mg/L · ${night?'夜間':'白天'} · 養殖戶 ${CHARS[charIdx].name}`;
+  let fs=Math.round(Math.min(c.width,c.height)*0.04);const fnt=n=>`600 ${n}px -apple-system,"PingFang TC","Noto Sans TC",sans-serif`;g.font=fnt(fs);
+  while(fs>8&&g.measureText(l1).width>c.width-fs*2){fs--;g.font=fnt(fs);}
+  g.textBaseline='bottom';g.shadowColor='rgba(0,0,0,.7)';g.shadowBlur=fs*0.4;g.fillStyle='rgba(255,255,255,.95)';
+  g.fillText(l1,fs*0.9,c.height-fs*0.8-fs*1.25);g.font=fnt(Math.round(fs*0.72));g.fillStyle='rgba(255,255,255,.85)';g.fillText(l2,fs*0.9,c.height-fs*0.8);
+  const fl=$('#flash');fl.style.transition='none';fl.style.opacity=0.85;requestAnimationFrame(()=>{fl.style.transition='opacity .45s';fl.style.opacity=0;});sndShutter();
+  c.toBlob(b=>{if(!b)return;shotBlob=b;if(shotUrl)URL.revokeObjectURL(shotUrl);shotUrl=URL.createObjectURL(b);$('#shotImg').src=shotUrl;openModal('shot');},'image/jpeg',0.92);}
+$('#shotX').onclick=()=>closeModal('shot');
+let dlNS=null;try{if(window.claude&&window.claude.use)window.claude.use('downloads').then(n=>{dlNS=n;}).catch(()=>{});}catch(e){}
+$('#shotSave').onclick=()=>{if(!shotBlob)return;const name='故鄉魚塭-'+Date.now()+'.jpg';
+  if(dlNS){dlNS.save({filename:name,data:shotBlob}).then(r=>{if(r&&r.status==='saved')toast('照片已儲存');}).catch(e=>{if(!e||e.code!=='declined')toast('無法儲存，請長按照片儲存');});return;}
+  let file=null;try{file=new File([shotBlob],name,{type:'image/jpeg'});}catch(e){}
+  try{if(file&&navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:'故鄉魚塭'}).catch(()=>{});return;}}catch(e){}
+  try{const a=document.createElement('a');a.href=shotUrl;a.download=name;document.body.appendChild(a);a.click();a.remove();toast('照片已下載（若沒反應，請長按照片儲存）');}catch(e){toast('請長按照片儲存');}};
+
+/* ---------- 螢幕保護模式 ---------- */
+let saver=false,svT=0,svI=0,wakeLock=null;
+const SV_SEQ=['orbit','raft','bird','fish','aer','under','gate','bird'];
+function svNext(){const k=SV_SEQ[svI++%SV_SEQ.length];svT=0;follow=null;
+  if(k==='orbit')setGoal(new V3(0,0,0),115,cam.theta,0.9);
+  if(k==='raft'){follow=raft;setGoal(raft.position,9,cam.theta,1.12);
+    if(!raftState.phase){const t=Math.random()<0.6?'fish':'shrimp';if(!bags[t].stack.length)restock(t);startFeed(t);}}
+  if(k==='fish'||k==='under'){const f=fishes[(Math.random()*fishes.length)|0];if(f){follow=f.g;setGoal(f.g.position,k==='fish'?5:7,cam.theta,k==='fish'?rand(1.2,1.45):1.62);}else setGoal(new V3(0,0,0),115,cam.theta,0.9);}
+  if(k==='aer'){const a=aerators[(Math.random()*4)|0];setGoal(new V3(a.x,0.3,a.z),10,cam.theta,1.15);}
+  if(k==='bird'){const b=birds[(Math.random()*birds.length)|0];follow=b.o.root;setGoal(b.o.root.position,5,cam.theta,1.25);}
+  if(k==='gate')setGoal(new V3(0,1.5,55),24,Math.PI+0.55,1.12);}
+function enterSaver(){if(cctvOn)exitCCTV();saver=true;svI=0;document.body.classList.add('saver');closeModal('shot');$('#info').classList.add('hide');moreMenu.classList.remove('show');
+  const de=document.documentElement,rf=de.requestFullscreen||de.webkitRequestFullscreen;if(rf){try{const pr=rf.call(de);if(pr&&pr.catch)pr.catch(()=>{});}catch(e){}}
+  try{if(navigator.wakeLock)navigator.wakeLock.request('screen').then(w=>{wakeLock=w;}).catch(()=>{});}catch(e){}
+  svNext();toast('螢幕保護中 · 點一下畫面離開');}
+function exitSaver(){saver=false;document.body.classList.remove('saver');follow=null;
+  const ex=document.exitFullscreen||document.webkitExitFullscreen;if((document.fullscreenElement||document.webkitFullscreenElement)&&ex){try{const pr=ex.call(document);if(pr&&pr.catch)pr.catch(()=>{});}catch(e){}}
+  if(wakeLock){try{wakeLock.release().catch(()=>{});}catch(e){}wakeLock=null;}}
+$('#bSaver').onclick=()=>setTimeout(enterSaver,80);
+document.addEventListener('pointerdown',e=>{if(saver){e.stopPropagation();e.preventDefault();exitSaver();}},true);
+document.addEventListener('visibilitychange',()=>{try{if(saver&&!document.hidden&&navigator.wakeLock&&!wakeLock)navigator.wakeLock.request('screen').then(w=>{wakeLock=w;}).catch(()=>{});}catch(e){}});
+if(location.hash==='#kiosk'||/[?&]kiosk=1/.test(location.search))setTimeout(enterSaver,900);
+
+/* ---------- 畫質 ---------- */
+let quality='high',qUser=false;
+try{const q=localStorage.getItem('pond_quality');if(q==='high'||q==='low'){quality=q;qUser=true;}}catch(e){}
+const bQual=$('#bQual');
+function applyQuality(q,save){quality=q;renderer.setPixelRatio(q==='high'?Math.min(devicePixelRatio||1,2):Math.min(devicePixelRatio||1,1.25));renderer.setSize(innerWidth,innerHeight);
+  sun.castShadow=q==='high';bQual.textContent='✨ 畫質：'+(q==='high'?'高畫質':'省電');if(save){qUser=true;try{localStorage.setItem('pond_quality',q);}catch(e){}}}
+bQual.onclick=()=>{applyQuality(quality==='high'?'low':'high',true);toast(quality==='high'?'高畫質：陰影、高解析度':'省電畫質：關閉陰影、降低解析度');};
+applyQuality(quality,false);
+let fpsT0=0,fpsN=0,fpsChecks=0;
+function fpsMonitor(){if(qUser||quality==='low'||fpsChecks>4)return;const now=performance.now();if(!fpsT0){fpsT0=now;return;}fpsN++;
+  if(now-fpsT0>=4000){const fps=fpsN*1000/(now-fpsT0);fpsT0=now;fpsN=0;fpsChecks++;
+    if(fpsChecks>1&&fps<24&&!document.hidden){applyQuality('low',false);toast('裝置有點吃力，已自動切換為省電畫質');}}}
+
+/* ---------- 放養數量 ---------- */
+const STOCK={
+  milkfish:{n:'🐟 虱目魚',unit:'尾',step:6,max:180,get:()=>fishes.length,set:v=>{while(fishes.length<v)addFish();while(fishes.length>v)removeFish();}},
+  shrimp:{n:'🦐 草蝦',unit:'隻',step:6,max:120,get:()=>shrimps.length,set:v=>{while(shrimps.length<v)addShrimp();while(shrimps.length>v)removeShrimp();}},
+  clam:{n:'🐚 蛤蠣（文蛤）',unit:'顆',step:100,max:CLAM_MAX,get:()=>clams.count,set:v=>{clams.count=v;}},
+};
+function saveCounts(){try{localStorage.setItem('pond_counts',JSON.stringify({milkfish:fishes.length,shrimp:shrimps.length,clam:clams.count}));}catch(e){}}
+function renderStock(){
+  $('#stockRows').innerHTML=Object.keys(STOCK).map(k=>{const s=STOCK[k],n=s.get();
+    return `<div class="srow"><span class="nm">${s.n}</span><button data-k="${k}" data-d="-1" ${n?'':'disabled'}>－</button><b>${n} ${s.unit}</b><button data-k="${k}" data-d="1" ${n>=s.max?'disabled':''}>＋</button></div>`;}).join('');
+  const load=fishes.length/72*0.6+shrimps.length/42*0.3+clams.count/700*0.1;
+  const lp=$('#loadTxt');lp.textContent=load<0.8?'放養偏少，水質很穩':load<1.25?'放養適中':load<1.8?'放養偏多：溶氧會變低，水車要常開':'放養過多：夜間很容易缺氧浮頭';
+  lp.className='tip'+(load>=1.8?' warn':'');}
+$('#stockRows').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const s=STOCK[b.dataset.k],d=+b.dataset.d;
+  s.set(clamp(s.get()+d*s.step,0,s.max));saveCounts();renderStock();});
+$('#bStock').onclick=()=>{if(HV.on){toast('收成中，等收完再調整');return;}renderStock();openModal('stock');};
+$('#stockDone').onclick=()=>closeModal('stock');
+
+/* ---------- 養殖須知 ---------- */
+$('#bGuide').onclick=()=>openModal('guide');
+$('#guideDone').onclick=()=>closeModal('guide');
+
+/* ---------- 四角監視器（PTZ：可轉動、拉近拉遠） ---------- */
+const CCTV_DEF=[{name:'東北角（閘門側）',x:56.5,z:56.5},{name:'西北角',x:-56.5,z:56.5},{name:'西南角（工寮）',x:-56.5,z:-56.5},{name:'東南角',x:56.5,z:-56.5}];
+const CC_FOV=62;
+const cctvs=[];let cctvOn=false,ccCur=0,ccSplit=false,ccPatrol=false;
+const ccHousingGeo=(()=>{const ps=[];const B=new THREE.BoxGeometry(1,1,1);
+  ps.push(part(B,0xf1f1ee,M(0,0,0.12,0,0,0,0.2,0.18,0.46)));
+  ps.push(part(B,0xdcdcd6,M(0,0.11,0.17,0,0,0,0.26,0.025,0.6)));
+  ps.push(part(new THREE.CylinderGeometry(0.068,0.068,0.05,18),0x1a1a1a,M(0,0,0.36,Math.PI/2,0,0)));
+  ps.push(part(new THREE.CylinderGeometry(0.047,0.047,0.02,18),0x2b3f63,M(0,0,0.388,Math.PI/2,0,0)));
+  ps.push(part(B,0xc9c9c2,M(0,-0.1,0.05,0,0,0,0.08,0.04,0.08)));
+  return merge(ps);})();
+const ccMountGeo=(()=>{const ps=[];
+  ps.push(part(new THREE.CylinderGeometry(0.05,0.05,0.16,10),0xbfc3c4,M(0,0.06,0)));
+  ps.push(part(new THREE.CylinderGeometry(0.09,0.09,0.05,14),0xbfc3c4,M(0,0.15,0)));
+  return merge(ps);})();
+const ccLedMat=new THREE.MeshBasicMaterial({color:0xff2a2a}),ccIrMat=new THREE.MeshBasicMaterial({color:0x200404});
+const ccMat=vcMat({shininess:40});
+CCTV_DEF.forEach((d,i)=>{
+  const g=new THREE.Group();g.userData={key:'cctv',cc:i};
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.095,5.2,10),lamb(0x8f9497));pole.position.set(d.x,3.8,d.z);pole.castShadow=true;g.add(pole);
+  const box=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.38,0.16),lamb(0xd7d9d6));box.position.set(d.x,2.6,d.z);box.castShadow=true;g.add(box);
+  const ix=-Math.sign(d.x)*0.32,iz=-Math.sign(d.z)*0.32;
+  const arm=new THREE.Mesh(merge([cyl([d.x,6.25,d.z],[d.x+ix,6.3,d.z+iz],0.035,0x8f9497,8)]),ccMat);arm.castShadow=true;g.add(arm);
+  const head=new THREE.Group();head.position.set(d.x+ix,6.12,d.z+iz);g.add(head);
+  const mount=new THREE.Mesh(ccMountGeo,ccMat);head.add(mount);
+  const tiltG=new THREE.Group();head.add(tiltG);
+  const hm=new THREE.Mesh(ccHousingGeo,ccMat);hm.castShadow=true;tiltG.add(hm);
+  const led=new THREE.Mesh(new THREE.SphereGeometry(0.014,6,5),ccLedMat);led.position.set(0.07,-0.05,0.35);tiltG.add(led);
+  const ir=new THREE.Mesh(new THREE.TorusGeometry(0.075,0.01,6,20),ccIrMat);ir.position.z=0.387;tiltG.add(ir);
+  const cam=new THREE.PerspectiveCamera(CC_FOV,1,0.2,3000);
+  const pan=Math.atan2(-head.position.x,-head.position.z),tilt=-0.13;
+  scene.add(g);
+  cctvs.push({def:d,g,head,tiltG,cam,pan,tilt,fov:CC_FOV,tp:pan,tt:tilt,tf:CC_FOV,home:{pan,tilt,fov:CC_FOV}});
+});
+const _cd=new V3();
+let ccFilter='',ccClockAcc=1;
+function updateCCTV(dt){
+  for(let i=0;i<4;i++){const c=cctvs[i];
+    if(ccPatrol)c.tp=c.home.pan+Math.sin(T*0.12+i*1.7)*1.0;
+    const k=Math.min(1,dt*5);c.pan=angLerp(c.pan,c.tp,k);c.tilt=lerp(c.tilt,c.tt,k);c.fov=lerp(c.fov,c.tf,k);
+    c.head.rotation.y=c.pan;c.tiltG.rotation.x=-c.tilt;
+    _cd.set(Math.cos(c.tilt)*Math.sin(c.pan),Math.sin(c.tilt),Math.cos(c.tilt)*Math.cos(c.pan));
+    c.cam.position.copy(c.head.position).addScaledVector(_cd,0.5);
+    c.cam.lookAt(c.cam.position.x+_cd.x,c.cam.position.y+_cd.y,c.cam.position.z+_cd.z);
+    c.cam.fov=c.fov;}
+  ccLedMat.color.setHex((T%1)<0.5?0xff2a2a:0x3a0606);
+  ccIrMat.color.setRGB(0.12+0.75*nightK,0.03,0.03);
+  if(!cctvOn)return;
+  const f=nightK>0.5?'grayscale(1) brightness(1.75) contrast(1.2)':'saturate(.82) contrast(1.06)';
+  if(f!==ccFilter){ccFilter=f;renderer.domElement.style.filter=f;$('#ccIR').textContent=nightK>0.5?'IR 紅外線夜視':'';}
+  ccClockAcc+=dt;
+  if(ccClockAcc>0.25){ccClockAcc=0;const d=new Date(),p2=n=>String(n).padStart(2,'0');
+    const ts=`${d.getFullYear()}/${p2(d.getMonth()+1)}/${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
+    $('#ccTime').textContent=ts;document.querySelectorAll('.ccQ i').forEach(e=>e.textContent=ts.slice(11));
+    $('#ccRec').style.visibility=(d.getMilliseconds()<500||d.getSeconds()%2)?'visible':'hidden';
+    if(!ccSplit){const c=cctvs[ccCur];const z=CC_FOV/c.tf;$('#ccZoomTxt').textContent='×'+z.toFixed(1);if(document.activeElement!==$('#ccZoom'))$('#ccZoom').value=z;}}
+}
+function renderCCTV(){
+  const w=innerWidth,h=innerHeight;
+  if(ccSplit){
+    renderer.setScissorTest(true);renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;
+    for(let i=0;i<4;i++){const c=cctvs[i].cam,x=(i%2)*w/2,y=i<2?h/2:0;
+      renderer.setViewport(x,y,w/2,h/2);renderer.setScissor(x,y,w/2,h/2);
+      c.aspect=w/h;c.updateProjectionMatrix();sky.position.copy(c.position);renderer.render(scene,c);}
+    renderer.setScissorTest(false);renderer.setViewport(0,0,w,h);renderer.shadowMap.autoUpdate=true;
+  }else{const c=cctvs[ccCur].cam;c.aspect=w/h;c.updateProjectionMatrix();sky.position.copy(c.position);renderer.render(scene,c);}
+}
+function sndClick(){tone(0.06,1900,1300,0.04,'square');}
+function ccUI(){
+  document.querySelectorAll('#cctv [data-cam]').forEach(b=>b.classList.toggle('on',!ccSplit&&+b.dataset.cam===ccCur));
+  $('#ccSplitBtn').classList.toggle('on',ccSplit);$('#ccPatrol').classList.toggle('on',ccPatrol);
+  $('#ccName').textContent=ccSplit?'四分割畫面':`CAM ${ccCur+1}・${cctvs[ccCur].def.name}`;
+  $('#ccQuad').style.display=ccSplit?'block':'none';$('#ccPtz').classList.toggle('dis',ccSplit);
+  $('#ccHint').textContent=ccSplit?'點任一格放大該鏡頭':'拖曳轉動鏡頭・雙指或滑桿拉近拉遠';}
+function enterCCTV(i,split){cctvOn=true;ccCur=i==null?ccCur:i;ccSplit=!!split;ccFilter='';
+  document.body.classList.add('cctv');$('#cctv').classList.remove('hide');$('#info').classList.add('hide');moreMenu.classList.remove('show');
+  if(isUnder){isUnder=false;scene.fog=skyFog;$('#uw').style.display='none';}
+  ccUI();sndClick();}
+function exitCCTV(){ccSetTrack(null);cctvOn=false;document.body.classList.remove('cctv');$('#cctv').classList.add('hide');renderer.domElement.style.filter='';ccFilter='';sndClick();}
+$('#bCctv').onclick=()=>enterCCTV(ccCur,false);
+$('#ccX').onclick=exitCCTV;
+document.querySelectorAll('#cctv [data-cam]').forEach(b=>b.onclick=()=>{ccSetTrack(null);ccCur=+b.dataset.cam;ccSplit=false;ccUI();sndClick();});
+$('#ccSplitBtn').onclick=()=>{ccSetTrack(null);ccSplit=!ccSplit;ccUI();sndClick();};
+$('#ccPatrol').onclick=()=>{ccSetTrack(null);ccPatrol=!ccPatrol;ccUI();toast(ccPatrol?'自動巡航：四支鏡頭左右來回掃描':'停止巡航');};
+$('#ccHome').onclick=()=>{ccSetTrack(null);const c=cctvs[ccCur];c.tp=c.home.pan;c.tt=c.home.tilt;c.tf=c.home.fov;ccPatrol=false;ccUI();};
+$('#ccShot').onclick=()=>{wantShot=true;};
+function ccNudge(dp,dt_){ccSetTrack(null);const c=cctvs[ccCur],f=c.tf/CC_FOV;c.tp+=dp*0.3*Math.max(f,0.25);c.tt=clamp(c.tt+dt_*0.18*Math.max(f,0.25),-1.35,0.2);ccPatrol=false;ccUI();}
+$('#ccL').onclick=()=>ccNudge(1,0);$('#ccR').onclick=()=>ccNudge(-1,0);$('#ccU').onclick=()=>ccNudge(0,1);$('#ccD').onclick=()=>ccNudge(0,-1);
+$('#ccIn').onclick=()=>{const c=cctvs[ccCur];c.tf=clamp(c.tf/1.5,CC_FOV/15,CC_FOV);};
+$('#ccOut').onclick=()=>{const c=cctvs[ccCur];c.tf=clamp(c.tf*1.5,CC_FOV/15,CC_FOV);};
+$('#ccZoom').addEventListener('input',e=>{const c=cctvs[ccCur];c.tf=CC_FOV/(+e.target.value);$('#ccZoomTxt').textContent='×'+(+e.target.value).toFixed(1);});
+{const el=$('#ccTouch'),pts=new Map();let pinch=0,down=null;
+ el.addEventListener('pointerdown',e=>{el.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+   if(pts.size===1)down={m:0,t:performance.now()};if(pts.size===2){const [a,b]=[...pts.values()];pinch=Math.hypot(a.x-b.x,a.y-b.y);if(down)down.m=99;}});
+ el.addEventListener('pointermove',e=>{const p=pts.get(e.pointerId);if(!p)return;const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
+   if(down)down.m+=Math.abs(dx)+Math.abs(dy);if(ccSplit)return;const c=cctvs[ccCur],f=c.tf/CC_FOV;
+   if(pts.size===1){if(ccTrack&&Math.abs(dx)+Math.abs(dy)>2)ccSetTrack(null);c.tp+=dx*0.005*f;c.tt=clamp(c.tt+dy*0.005*f,-1.35,0.2);if(ccPatrol){ccPatrol=false;ccUI();}}
+   else if(pts.size===2){const [a,b]=[...pts.values()],d=Math.hypot(a.x-b.x,a.y-b.y);if(pinch>0)c.tf=clamp(c.tf*pinch/d,CC_FOV/15,CC_FOV);pinch=d;}});
+ const up=e=>{if(down&&pts.size===1&&down.m<8&&!ccSplit){for(const el of boxPool){if(el.style.display==='none')continue;const r=el.getBoundingClientRect();if(e.clientX>=r.left-10&&e.clientX<=r.right+10&&e.clientY>=r.top-16&&e.clientY<=r.bottom+10){ccSetTrack(el._it);sndClick();break;}}}
+   if(down&&pts.size===1&&down.m<8&&ccSplit){ccCur=(e.clientX>innerWidth/2?1:0)+(e.clientY>innerHeight/2?2:0);ccSplit=false;ccUI();sndClick();}
+   pts.delete(e.pointerId);if(pts.size<2)pinch=0;if(!pts.size)down=null;};
+ el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);
+ el.addEventListener('wheel',e=>{e.preventDefault();if(ccSplit)return;const c=cctvs[ccCur];c.tf=clamp(c.tf*(1+e.deltaY*0.001),CC_FOV/15,CC_FOV);},{passive:false});}
+CCTV_DEF.forEach((d,i)=>addLabel('📹 CAM '+(i+1),()=>new V3(cctvs[i].head.position.x,7.4,cctvs[i].head.position.z),true));
+
+/* ---------- 濕地鳥類 ---------- */
+const BIRD_SP={
+ spoonbill:{name:'黑面琵鷺',sw:'#f2f2ec',box:'#7CFC9A',n:8,flock:true,zones:['beach','pond'],hab:'wade',feed:'sweep',walk:0.3,scale:1.2,flapHz:6,
+  body:0xf5f5f0,wing:0xf2f2ec,tip:0xf2f2ec,tail:0xf2f2ec,neck:0xf5f5f0,head:0xf5f5f0,bill:0x1a1a1a,billType:'spoon',billLen:0.19,leg:0x1a1a1a,legR:0.01,
+  legLen:0.34,bodyLen:0.48,bodyH:0.2,bodyW:0.19,neckLen:0.28,neckR:0.032,headR:0.055,span:1.2,stand:[-0.35,0.35],
+  headX:[[0x161616,0.03,0,0,0.045,0.05,0.052]],
+  desc:'全球瀕危的冬候鳥，每年秋冬從東北亞飛來台灣度冬，台南七股、曾文溪口一帶是重要棲地。嘴巴像一支黑色湯匙，在淺水裡左右掃動，碰到魚蝦就夾起來吃。'},
+ ibis:{name:'埃及聖䴉',sw:'#2a2a2a',box:'#FFB347',n:5,flock:true,zones:['pond','beach'],hab:'wade',feed:'probe',walk:0.35,scale:1.2,flapHz:6,
+  body:0xf4f4ef,wing:0xf4f4ef,tip:0x1b1b1b,tail:0x1b1b1b,neck:0x1b1b1b,head:0x1b1b1b,bill:0x1b1b1b,billType:'decurve',billLen:0.17,leg:0x262626,legR:0.009,
+  legLen:0.33,bodyLen:0.46,bodyH:0.21,bodyW:0.2,neckLen:0.27,neckR:0.028,headR:0.045,span:1.15,stand:[-0.3,0.3],
+  bodyX:[[0x1b1b1b,-0.25,0.03,0,0.11,0.07,0.1]],
+  desc:'原產非洲的外來入侵種，頭頸裸露黑色、嘴長而下彎。在台灣西部濕地大量繁殖，會和本土鷺鷥搶棲地，各地都在移除控制。常把長嘴插進泥裡探找食物。'},
+ stilt:{name:'高蹺鴴',sw:'#e86b7c',box:'#FF6FB5',n:6,flock:false,zones:['pond','beach'],hab:'wade',feed:'peck',walk:0.4,scale:1.5,flapHz:8,
+  body:0xfbfbf8,wing:0x151515,tip:0x151515,tail:0xd8d8d8,neck:0xfbfbf8,head:0xfbfbf8,bill:0x111111,billType:'straight',billLen:0.065,billR:0.005,leg:0xe86b7c,legR:0.006,eye:0xb01010,
+  legLen:0.42,bodyLen:0.28,bodyH:0.12,bodyW:0.12,neckLen:0.12,neckR:0.022,headR:0.032,span:0.75,stand:[-0.2,0.2],
+  headX:[[0x8a8a8a,-0.008,0.016,0,0.03,0.022,0.03]],
+  desc:'粉紅色的細長腳是最大特徵，黑翅白身，在魚塭淺水裡優雅地踱步、啄食水面的小蟲小蝦。叫聲是急促的「kek kek」。'},
+ plover:{name:'東方環頸鴴',sw:'#b79f78',box:'#FFE066',n:8,flock:false,zones:['beach','pond'],hab:'shore',feed:'peck',walk:1.1,run:true,scale:2.0,flapHz:11,
+  body:0xf7f5ee,wing:0xb79f78,tip:0x5e4e38,tail:0x9a8462,neck:0xf7f5ee,head:0xf7f5ee,bill:0x1a1a1a,billType:'straight',billLen:0.018,billR:0.004,leg:0x3a3a3a,legR:0.004,
+  legLen:0.07,bodyLen:0.15,bodyH:0.08,bodyW:0.08,neckLen:0.03,neckR:0.02,headR:0.026,span:0.4,stand:[0,0],
+  headX:[[0xa8916c,-0.004,0.014,0,0.026,0.016,0.026],[0x2a2a2a,0.01,0.004,0.02,0.012,0.004,0.006],[0x2a2a2a,0.01,0.004,-0.02,0.012,0.004,0.006]],
+  bodyX:[[0x1e1e1e,0.045,0.015,0.032,0.018,0.022,0.012],[0x1e1e1e,0.045,0.015,-0.032,0.018,0.022,0.012]],
+  desc:'小巧的鴴科水鳥，在沙灘、泥灘上快跑一段、突然停下、低頭一啄，再繼續跑。胸側有一段不完整的黑色頸環，所以叫「環頸鴴」。（模型已放大）'},
+ heron:{name:'蒼鷺',sw:'#9aa2a6',box:'#7FD3FF',n:2,flock:false,zones:['pond'],hab:'deep',feed:'strike',walk:0.25,scale:1.15,flapHz:3.5,
+  body:0x9aa2a6,wing:0x8b949a,tip:0x2f3438,tail:0x8b949a,neck:0xdedfe0,head:0xeeeeee,bill:0xd9b23a,billType:'straight',billLen:0.13,billR:0.014,leg:0x8a7a4a,legR:0.012,eye:0xe8c840,
+  legLen:0.5,bodyLen:0.55,bodyH:0.24,bodyW:0.22,neckLen:0.42,neckR:0.03,headR:0.045,span:1.7,stand:[-0.12,0.12],neckBack:true,
+  headX:[[0x1c1c1c,-0.01,0.018,0.022,0.045,0.01,0.01],[0x1c1c1c,-0.01,0.018,-0.022,0.045,0.01,0.01],[0x1c1c1c,-0.07,0.012,0,0.06,0.007,0.007]],
+  desc:'台灣體型最大的鷺科鳥類之一，冬天常見。灰色身體、白色長頸，能一動也不動地站在水邊很久，等魚靠近再閃電般出擊。起飛時會發出沙啞的「呱—」聲。'},
+ kingfisher:{name:'翠鳥',sw:'#1d86b8',box:'#4DE1FF',n:1,kf:true,scale:2.4,flapHz:14,
+  body:0xe0782c,wing:0x1d86b8,tip:0x16658c,tail:0x1d86b8,neck:0x1d86b8,head:0x1d86b8,bill:0x222222,billType:'straight',billLen:0.045,billR:0.007,leg:0xd04a2a,legR:0.004,
+  legLen:0.025,bodyLen:0.11,bodyH:0.07,bodyW:0.065,neckLen:0.015,neckR:0.025,headR:0.032,span:0.28,stand:[0.1,-0.1],bodyTilt:0.55,
+  headX:[[0xe0782c,0.002,-0.01,0.026,0.02,0.012,0.012],[0xe0782c,0.002,-0.01,-0.026,0.02,0.012,0.012],[0xffffff,0.022,-0.024,0,0.016,0.01,0.018]],
+  bodyX:[[0x3cc6e8,-0.01,0.03,0,0.045,0.008,0.012]],
+  desc:'背部亮藍綠色、腹部橙色的小鳥，常停在水邊的欄杆或管子上，看準水裡的魚就俯衝入水，叼著魚飛回來。叫聲是尖細的「嘰—」。（模型已放大）'},
+};
+Object.keys(BIRD_SP).forEach(k=>{BIRD_SP[k].k=k;INFO['bird_'+k]=[BIRD_SP[k].name,BIRD_SP[k].desc];FOLLOW_NAMES['bird_'+k]=BIRD_SP[k].name;});
+const EGRET_INFO={name:'小白鷺（白鷺鷥）',sw:'#ffffff',box:'#FFFFFF',desc:'魚塭最常見的鷺鷥，全身白、腳趾黃色，常站在池邊淺水處等機會捕小魚小蝦。'};
+const birdMat=vcMat({shininess:18}),birdWingMat=vcMat({shininess:18,side:THREE.DoubleSide});
+function buildBird(k){
+  const sp=BIRD_SP[k],S=new THREE.SphereGeometry(1,12,9);
+  const L=sp.legLen,BL=sp.bodyLen,BH=sp.bodyH,BW=sp.bodyW,NL=sp.neckLen,HR=sp.headR;
+  const root=new THREE.Group();root.userData={key:'bird_'+k,movable:true};
+  const w=Math.max(0.02,BW*0.18);
+  const legsG=new THREE.Group();legsG.position.y=L;root.add(legsG);
+  {const lp=[];for(const s of[1,-1]){lp.push(cyl([0,0.02,w*s],[0,-L,w*s],sp.legR,sp.leg,5));lp.push(part(S,sp.leg,M(0.025*sp.legLen/0.3+0.01,-L,w*s,0,0,0,Math.max(0.02,L*0.1),0.005,0.012)));}
+   legsG.add(new THREE.Mesh(merge(lp),birdMat));}
+  const bodyG=new THREE.Group();bodyG.position.y=L+BH*0.3;bodyG.rotation.z=sp.bodyTilt||0;root.add(bodyG);
+  {const bp=[part(S,sp.body,M(0,0,0,0,0,0,BL/2,BH/2,BW/2)),part(S,sp.wing,M(-BL*0.06,BH*0.14,0,0,0,0,BL*0.42,BH*0.33,BW*0.53)),
+     part(S,sp.tip,M(-BL*0.4,BH*0.12,0,0,0,0.1,BL*0.2,BH*0.15,BW*0.42)),part(S,sp.tail,M(-BL*0.5,BH*0.04,0,0,0,0.15,BL*0.16,BH*0.1,BW*0.3))];
+   (sp.bodyX||[]).forEach(([c,x,y,z,a,b,d])=>bp.push(part(S,c,M(x,y,z,0,0,0,a,b,d))));
+   const m=new THREE.Mesh(merge(bp),birdMat);m.castShadow=true;bodyG.add(m);}
+  const neckG=new THREE.Group();neckG.rotation.order='YXZ';neckG.position.set(BL*0.38,BH*0.22,0);bodyG.add(neckG);
+  neckG.add(new THREE.Mesh(merge([part(new THREE.CylinderGeometry(sp.neckR*0.85,sp.neckR,NL,8),sp.neck,M(0,NL/2,0)),part(S,sp.neck,M(0,0,0,0,0,0,sp.neckR,sp.neckR,sp.neckR))]),birdMat));
+  const headG=new THREE.Group();headG.position.y=NL;neckG.add(headG);
+  {const hp=[part(S,sp.head,M(0,0,0,0,0,0,HR*1.15,HR,HR*0.9))];
+   (sp.headX||[]).forEach(([c,x,y,z,a,b,d])=>hp.push(part(S,c,M(x,y,z,0,0,0,a,b,d))));
+   for(const s of[1,-1])hp.push(part(S,sp.eye||0x0a0a0a,M(HR*0.55,HR*0.3,HR*0.72*s,0,0,0,HR*0.16,HR*0.16,HR*0.12)));
+   const bl=sp.billLen,x0=HR*0.95;
+   if(sp.billType==='spoon'){hp.push(part(new THREE.CylinderGeometry(0.011,0.014,bl,8),sp.bill,M(x0+bl/2,-0.012,0,0,0,-Math.PI/2-0.08,1,1,0.75)));
+     hp.push(part(S,sp.bill,M(x0+bl,-0.026,0,0,0,-0.08,0.042,0.008,0.03)));}
+   else if(sp.billType==='decurve'){let px=x0,py=-0.005;for(let i=1;i<=5;i++){const t=i/5,nx=x0+bl*0.92*t,ny=-0.005-bl*0.5*t*t;hp.push(cyl([px,py,0],[nx,ny,0],0.011*(1-t*0.55),sp.bill,6));px=nx;py=ny;}}
+   else hp.push(part(new THREE.ConeGeometry(sp.billR,bl,7),sp.bill,M(x0+bl/2-0.004,-HR*0.12,0,0,0,-Math.PI/2)));
+   headG.add(new THREE.Mesh(merge(hp),birdMat));}
+  const catchFish=new THREE.Mesh(fishGeo,fishMat);catchFish.scale.set(0.14,0.14,0.14);catchFish.position.set(HR+sp.billLen*0.7,-0.02,0);catchFish.rotation.y=Math.PI/2;catchFish.visible=false;headG.add(catchFish);
+  const C=BL*0.62,sp2=sp.span/2;
+  const wg=merge([part(new THREE.BoxGeometry(1,1,1),sp.wing,M(0,0,sp2*0.3,0,0,0,C,0.012,sp2*0.6)),part(new THREE.BoxGeometry(1,1,1),sp.tip,M(-C*0.12,0,sp2*0.8,0,0,0,C*0.78,0.01,sp2*0.42))]);
+  const wl=new THREE.Group(),wr=new THREE.Group();wl.position.set(-BL*0.02,BH*0.3,BW*0.4);wr.position.set(-BL*0.02,BH*0.3,-BW*0.4);
+  wl.add(new THREE.Mesh(wg,birdWingMat));const wrm=new THREE.Mesh(wg,birdWingMat);wrm.scale.z=-1;wr.add(wrm);
+  wl.visible=wr.visible=false;bodyG.add(wl,wr);
+  root.scale.setScalar(sp.scale);root.rotation.order='YXZ';
+  return {root,bodyG,neckG,headG,legsG,wl,wr,catchFish};
+}
+/* 棲地 */
+function waterLv(x,z){const d=Math.max(Math.abs(x),Math.abs(z));if(d<52&&z<54)return 0;if(z>57)return SEA_Y;return null;}
+function depthAt(x,z){const L=waterLv(x,z);return L==null?-9:L-terrainH(x,z);}
+const HAB={wade:[0.04,0.26],deep:[0.12,0.42],shore:[-0.25,0.05]};
+function sampleSpot(zone,hab,near,rad){
+  for(let i=0;i<60;i++){let x,z;
+    if(near){x=near.x+rand(-rad,rad);z=near.z+rand(-rad,rad);}
+    else if(zone==='beach'){x=rand(-110,110);if(Math.abs(x)<9)continue;z=rand(77,86);}
+    else{const side=(Math.random()*4)|0,t=rand(-45,45),d=rand(47.8,50.8);
+      [x,z]=side===0?[t,-d]:side===1?[t,d]:side===2?[-d,t]:[d,t];if(side===1&&Math.abs(t)<7)continue;}
+    const dep=depthAt(x,z),r=HAB[hab];if(dep>=r[0]&&dep<=r[1])return new V3(x,terrainH(x,z),z);}
+  return null;}
+/* 建立鳥群 */
+const birds=[],birdFlocks=[];
+const KF_PERCH=[new V3(2.5,3.49,52.45),new V3(-51.2,1.1,-18),new V3(54.8,1.92,22)];
+Object.keys(BIRD_SP).forEach(k=>{const sp=BIRD_SP[k];
+  let flock=null;if(sp.flock){flock={k,c:null,timer:rand(60,140),members:[]};birdFlocks.push(flock);}
+  const zone0=sp.zones?sp.zones[0]:null;
+  if(flock)flock.c=sampleSpot(zone0,sp.hab)||new V3(-30,0,81);
+  for(let i=0;i<sp.n;i++){
+    const o=buildBird(k);
+    const b={k,sp,o,pos:new V3(),yaw:rand(0,6.28),state:'idle',t:rand(0,3),target:new V3(),ph:rand(0,6),nz:sp.stand[0],hz:sp.stand[1],ny:0,
+      reloc:rand(80,180),fl:null,h:(sp.legLen+sp.bodyH+sp.neckLen*0.7)*sp.scale,flock,zone:zone0,strikeT:rand(3,8),catchT:0};
+    if(sp.kf){b.perch=0;b.pos.copy(KF_PERCH[0]);b.state='perch';b.t=rand(4,9);}
+    else{const p=(flock?sampleSpot(null,sp.hab,flock.c,3.5):null)||sampleSpot(zone0,sp.hab)||new V3(-30,0.1,81);b.pos.copy(p);b.target.copy(p);}
+    if(flock)flock.members.push(b);
+    o.root.position.copy(b.pos);scene.add(o.root);birds.push(b);
+  }});
+/* 監視器可觀察的對象（含原本的白鷺鷥） */
+const birdObs=[];
+birds.forEach(b=>birdObs.push({obj:b.o.root,h:b.h,k:b.k,flying:()=>b.state==='fly'||(b.sp.kf&&b.state!=='perch')}));
+egrets.forEach(e=>birdObs.push({obj:e,h:0.85,k:'egret',flying:()=>false}));
+flyers.forEach(f=>birdObs.push({obj:f.g,h:0.45,k:'egret',flying:()=>true}));
+const birdObsByObj=new Map(birdObs.map(o=>[o.obj,o]));
+const spInfo=k=>k==='egret'?EGRET_INFO:BIRD_SP[k];
+const BIRD_KEYS=['spoonbill','ibis','stilt','plover','heron','kingfisher','egret'];
+/* 音效 */
+function sndCall(k,x,y,z){const a=att(x,y,z,30);if(a<0.02)return;
+  if(k==='stilt')for(let i=0;i<3;i++)tone(0.07*a,2300,2050,0.06,'square',i*0.14);
+  if(k==='plover')for(let i=0;i<2;i++)tone(0.08*a,3100,2800,0.05,'sine',i*0.12);
+  if(k==='heron')tone(0.12*a,240,150,0.35,'sawtooth');
+  if(k==='kingfisher')tone(0.07*a,6200,5600,0.22,'sine');
+  if(k==='ibis')tone(0.07*a,300,200,0.2,'sawtooth');
+  if(k==='spoonbill')tone(0.04*a,180,150,0.12,'triangle');}
+function sndFlap(x,z){const a=att(x,1,z,22);for(let i=0;i<5;i++)burst(0.12*a,350,0.06,'lowpass',i*0.1);}
+/* 飛行 */
+function flyTo(b,dest,delay=0){const p0=b.pos.clone(),d=p0.distanceTo(dest);if(d<1)return;
+  const p1=p0.clone().lerp(dest,0.5);p1.y+=clamp(d*0.25,3,14);
+  const dur=d/(b.sp.k==='heron'?5:7)+1.2;b.fl={p0,p1,p2:dest.clone(),t:-delay/dur,dur,started:false};b.state='fly';}
+function relocate(b){const sp=b.sp;const zone=sp.zones[(Math.random()*sp.zones.length)|0];
+  if(b.flock){const c=sampleSpot(zone,sp.hab);if(!c)return;b.flock.c=c;b.flock.timer=rand(90,200);
+    b.flock.members.forEach((m,i)=>{if(m.state==='fly')return;const d=sampleSpot(null,sp.hab,c,3.5)||c;flyTo(m,d,i*0.25+rand(0,0.4));});}
+  else{const d=sampleSpot(zone,sp.hab);if(d)flyTo(b,d);b.reloc=rand(90,200);}}
+const _bz=new V3(),_bv=new V3();
+function bez(p0,p1,p2,t,out){const u=1-t;return out.set(u*u*p0.x+2*u*t*p1.x+t*t*p2.x,u*u*p0.y+2*u*t*p1.y+t*t*p2.y,u*u*p0.z+2*u*t*p1.z+t*t*p2.z);}
+function setBirdPose(b,nz,hz,ny,dt,fast){const k=Math.min(1,dt*(fast?18:5));b.nz=lerp(b.nz,nz,k);b.hz=lerp(b.hz,hz,k);b.ny=lerp(b.ny,ny,k);
+  b.o.neckG.rotation.set(0,b.ny,b.nz);b.o.headG.rotation.z=b.hz;}
+function wings(b,on,flap){const o=b.o;o.wl.visible=o.wr.visible=on;if(on){o.wl.rotation.x=-flap;o.wr.rotation.x=flap;}}
+let lastTap=null,birdCallT=3;
+function updateFlight(b,dt){const f=b.fl,sp=b.sp,o=b.o;f.t+=dt/f.dur;
+  if(f.t<0){setBirdPose(b,sp.stand[0]+0.2,sp.stand[1],0,dt);return;}
+  if(!f.started){f.started=true;sndFlap(b.pos.x,b.pos.z);if(Math.random()<0.6)sndCall(b.k,b.pos.x,1,b.pos.z);}
+  const k=Math.min(1,f.t);bez(f.p0,f.p1,f.p2,k,b.pos);bez(f.p0,f.p1,f.p2,Math.min(1,k+0.01),_bv).sub(b.pos);
+  if(_bv.lengthSq()>1e-6){b.yaw=angLerp(b.yaw,Math.atan2(-_bv.z,_bv.x),Math.min(1,dt*4));}
+  const glide=k>0.82?0.35:1;wings(b,true,Math.sin(T*sp.flapHz*glide+b.ph)*(0.9*glide+0.15));
+  o.legsG.rotation.z=k>0.88?lerp(-1.45,0,(k-0.88)/0.12):-1.45;
+  if(sp.neckBack)setBirdPose(b,0.5,-0.5,0,dt);else setBirdPose(b,-1.35,1.35,0,dt);
+  o.root.position.copy(b.pos);o.root.rotation.set(0,b.yaw,0);
+  if(f.t>=1){b.state='idle';b.t=rand(1,3);b.target.copy(b.pos);wings(b,false);o.legsG.rotation.z=0;b.zone=Math.max(Math.abs(b.pos.x),Math.abs(b.pos.z))<55?'pond':'beach';}}
+function updateKF(b,dt){const o=b.o,sp=b.sp;b.t-=dt;const P=KF_PERCH[b.perch];
+  const go=(dest,dur,next)=>{b.fl={p0:b.pos.clone(),p2:dest.clone(),p1:b.pos.clone().lerp(dest,0.5).setY(Math.max(b.pos.y,dest.y)+1.2),t:0,dur};b.state=next;};
+  if(b.state==='perch'){b.pos.copy(P);b.yaw=angLerp(b.yaw,Math.atan2(P.z,-P.x),dt*3);wings(b,false);o.bodyG.rotation.z=sp.bodyTilt+Math.sin(T*2+b.ph)*0.04;
+    setBirdPose(b,0.1+Math.sin(T*0.7)*0.15,-0.1,Math.sin(T*0.5+b.ph)*0.6,dt);
+    b.catchT-=dt;o.catchFish.visible=b.catchT>0;
+    if(b.t<=0&&!night){const dir=new V3(-P.x,0,-P.z).normalize(),t=P.clone().addScaledVector(dir,rand(7,13));t.x+=rand(-4,4);t.z+=rand(-4,4);t.x=clamp(t.x,-44,44);t.z=clamp(t.z,-44,44);
+      b.dive=t.clone();go(new V3(t.x,2.4,t.z),1.4,'out');sndCall('kingfisher',P.x,P.y,P.z);}
+    else if(b.t<=0)b.t=rand(5,10);}
+  else if(b.state==='out'||b.state==='back'){const f=b.fl;f.t+=dt/f.dur;const k=Math.min(1,f.t);bez(f.p0,f.p1,f.p2,k,b.pos);_bv.copy(f.p2).sub(f.p0);
+    b.yaw=angLerp(b.yaw,Math.atan2(-_bv.z,_bv.x),dt*5);o.bodyG.rotation.z=0;wings(b,true,Math.sin(T*sp.flapHz)*0.9);setBirdPose(b,-0.3,0.3,0,dt);
+    if(k>=1){if(b.state==='out'){b.state='hover';b.t=rand(0.8,1.6);}else{b.state='perch';b.t=rand(6,14);if(b.caught){b.catchT=4;b.caught=false;}}}}
+  else if(b.state==='hover'){b.pos.set(b.dive.x,2.4+Math.sin(T*6)*0.05,b.dive.z);o.bodyG.rotation.z=0.5;wings(b,true,Math.sin(T*sp.flapHz*1.4)*1.0);setBirdPose(b,-0.5,0.2,0,dt);
+    if(b.t<=0){b.state='dive';b.t=0.32;}}
+  else if(b.state==='dive'){b.pos.y-=dt*8;o.bodyG.rotation.z=-1.45;wings(b,false);setBirdPose(b,-0.2,0.2,0,dt,true);
+    if(b.pos.y<-0.25){b.state='under';b.t=0.25;splashRing(b.pos.x,b.pos.z,12,0.8);ripple(b.pos.x,b.pos.z,0.5);sndSplash(b.pos.x,b.pos.z,false);b.caught=Math.random()<0.55;}}
+  else if(b.state==='under'){if(b.t<=0){b.state='rise';b.t=0.45;for(let i=0;i<6;i++)splash.spawn(b.pos.x,0.03,b.pos.z,rand(-0.4,0.4),rand(1,2),rand(-0.4,0.4),0.5);}}
+  else if(b.state==='rise'){b.pos.y+=dt*4;o.bodyG.rotation.z=0.8;wings(b,true,Math.sin(T*sp.flapHz)*1);o.catchFish.visible=b.caught;
+    if(b.t<=0){b.perch=(Math.random()*KF_PERCH.length)|0;go(KF_PERCH[b.perch],1.8,'back');}}
+  o.root.position.copy(b.pos);o.root.rotation.set(0,b.yaw,0);}
+function updateBirds(dt){
+  for(const f of birdFlocks){f.timer-=dt;if(f.timer<=0&&!night){relocate(f.members[0]);}}
+  const rp=raft.position;
+  for(const b of birds){const sp=b.sp,o=b.o;
+    if(sp.kf){updateKF(b,dt);continue;}
+    if(b.state==='fly'){updateFlight(b,dt);continue;}
+    // 受驚：竹筏太近或有人點水面
+    const dxr=b.pos.x-rp.x,dzr=b.pos.z-rp.z;
+    const tapNear=(lastTap&&T-lastTap.t<0.4&&Math.hypot(b.pos.x-lastTap.x,b.pos.z-lastTap.z)<10)||hvNear(b.pos);
+    if(dxr*dxr+dzr*dzr<64||tapNear){if(b.flock)relocate(b);else{const d=sampleSpot(sp.zones[(Math.random()*sp.zones.length)|0],sp.hab);if(d)flyTo(b,d);}continue;}
+    if(!b.flock){b.reloc-=dt;if(b.reloc<=0&&!night)relocate(b);}
+    b.t-=dt;
+    let nz=sp.stand[0],hz=sp.stand[1],ny=0,fast=false,bodyT=0;
+    const toT=_bz.set(b.target.x-b.pos.x,0,b.target.z-b.pos.z),dist=toT.length();
+    const moveTo=(spd)=>{if(dist>0.08){b.yaw=angLerp(b.yaw,Math.atan2(-toT.z,toT.x),Math.min(1,dt*3));const s=Math.min(dist,spd*dt);b.pos.x+=Math.cos(b.yaw)*s;b.pos.z-=Math.sin(b.yaw)*s;return true;}return false;};
+    if(b.state==='walk'){const moving=moveTo(sp.walk);if(!moving){b.state=Math.random()<0.7?'feed':'idle';b.t=rand(3,8);}
+      if(sp.run)bodyT=-0.1;}
+    else if(b.state==='feed'){
+      if(sp.feed==='sweep'){nz=-2.05;hz=1.0;ny=Math.sin(T*2.6+b.ph)*0.55;moveTo(0.07);}
+      else if(sp.feed==='probe'){nz=-1.95+Math.max(0,Math.sin(T*6+b.ph))*0.3;hz=1.0;moveTo(0.06);}
+      else if(sp.feed==='peck'){const c=(T*1.3+b.ph)%1;if(c<0.3){nz=-1.7;hz=0.9;bodyT=sp.run?-0.5:-0.2;fast=true;}if(sp.run&&c>0.3&&dist<0.2&&Math.random()<dt*0.8){b.state='walk';b.target.copy(sampleSpot(null,sp.hab,b.pos,1.6)||b.pos);}}
+      else if(sp.feed==='strike'){nz=0.1;hz=-0.25;b.strikeT-=dt;
+        if(b.strikeT<0&&b.strikeT>-0.4){nz=-1.6;hz=0.9;fast=true;if(!b.struck){b.struck=true;o.headG.getWorldPosition(_bv);splashRing(_bv.x,_bv.z,8,0.6);ripple(_bv.x,_bv.z,0.4);sndSplash(_bv.x,_bv.z,false);b.got=Math.random()<0.4;}}
+        else if(b.strikeT<=-0.4){b.strikeT=rand(4,10);b.struck=false;if(b.got){b.catchT=2.5;b.got=false;}}}}
+    else if(b.state==='rest'){nz=0.45;hz=-1.0;}
+    if(b.t<=0&&b.state!=='walk'){const r=Math.random();
+      if(night&&sp.k!=='heron'&&r<0.7){b.state='rest';b.t=rand(8,20);}
+      else if(r<0.45){b.state='walk';const c=b.flock?b.flock.c:b.pos;b.target.copy(sampleSpot(null,sp.hab,c,b.flock?3.5:(sp.run?3:4))||b.pos);b.t=12;}
+      else if(r<0.88){b.state='feed';b.t=rand(3,9);if(b.target.distanceTo(b.pos)<0.2)b.target.copy(sampleSpot(null,sp.hab,b.pos,1.2)||b.pos);}
+      else{b.state=Math.random()<0.3?'rest':'idle';b.t=rand(2,6);}}
+    b.catchT-=dt;o.catchFish.visible=b.catchT>0;
+    setBirdPose(b,nz,hz,ny,dt,fast);
+    o.bodyG.rotation.z=lerp(o.bodyG.rotation.z,bodyT,Math.min(1,dt*8));
+    const walking=b.state==='walk'&&dist>0.08;
+    b.pos.y=terrainH(b.pos.x,b.pos.z);
+    o.root.position.set(b.pos.x,b.pos.y+(walking?Math.abs(Math.sin(T*(sp.run?16:5)+b.ph))*0.012*(sp.run?1:2):0),b.pos.z);
+    o.root.rotation.set(0,b.yaw,walking&&!sp.run?Math.sin(T*5+b.ph)*0.04:0);}
+  birdCallT-=dt;if(birdCallT<0){birdCallT=rand(3,8);const b=birds[(Math.random()*birds.length)|0];if(b&&(!night||b.k==='heron'))sndCall(b.k,b.pos.x,1,b.pos.z);}
+}
+/* 觀鳥紀錄 */
+let birdSeen=new Set();try{birdSeen=new Set(JSON.parse(localStorage.getItem('pond_birds_seen')||'[]'));}catch(e){}
+function markSeen(k){if(birdSeen.has(k))return;birdSeen.add(k);try{localStorage.setItem('pond_birds_seen',JSON.stringify([...birdSeen]));}catch(e){}
+  toast(`🐦 新觀察紀錄：${spInfo(k).name}（${birdSeen.size}/${BIRD_KEYS.length}）`);tone(0.08,1320,1320,0.12,'sine');tone(0.08,1760,1760,0.18,'sine',0.12);}
+/* 監視器 AI 辨識框 */
+const boxPool=[];const _p1=new V3(),_p2=new V3();
+function updateBirdBoxes(){const host=$('#ccBoxes');let n=0;
+  if(cctvOn&&!ccSplit){const cam=cctvs[ccCur].cam,tanH=Math.tan(cam.fov*Math.PI/360),H=innerHeight,W=innerWidth;
+    for(const it of birdObs){it.obj.getWorldPosition(_p1);const sc=it.obj.scale?1:1;_p1.y+=it.h*0.5;
+      const d=cam.position.distanceTo(_p1);if(d>320)continue;_p2.copy(_p1).project(cam);if(_p2.z>1||Math.abs(_p2.x)>1.05||Math.abs(_p2.y)>1.05)continue;
+      const hp=it.h/(2*d*tanH)*H*1.25;if(hp<9)continue;const wp=hp*(it.flying()?1.9:1.15);
+      let el=boxPool[n];if(!el){el=document.createElement('div');el.className='bbox';el.innerHTML='<span></span>';host.appendChild(el);boxPool.push(el);}
+      const info=spInfo(it.k),conf=Math.min(99,78+Math.round(hp/5));
+      if(hp>34)markSeen(it.k);if(!showBoxes)continue;
+      el.style.display='block';el.style.borderColor=info.box;el.firstChild.style.background=info.box;
+      el.firstChild.textContent=`${info.name} ${conf}%`;
+      el.style.transform=`translate(${((_p2.x+1)/2*W-wp/2).toFixed(1)}px,${((1-_p2.y)/2*H-hp/2).toFixed(1)}px)`;el.style.width=wp.toFixed(0)+'px';el.style.height=hp.toFixed(0)+'px';
+      el._it=it;n++;if(n>=30)break;}}
+  for(let i=n;i<boxPool.length;i++)if(boxPool[i].style.display!=='none')boxPool[i].style.display='none';
+  boxPool.length&&(boxPool._n=n);}
+/* 監視器追蹤 */
+let showBoxes=true;try{showBoxes=localStorage.getItem('pond_boxes')!=='0';}catch(e){}
+function setBoxes(on,save){showBoxes=on;const b=$('#ccBoxBtn');b.classList.toggle('on',on);b.textContent='🔲 辨識框：'+(on?'開':'關');
+  if(save){try{localStorage.setItem('pond_boxes',on?'1':'0');}catch(e){}toast(on?'顯示鳥類辨識框':'已隱藏辨識框（仍會在背景記錄觀察）');}}
+$('#ccBoxBtn').onclick=()=>setBoxes(!showBoxes,true);setBoxes(showBoxes,false);
+let ccTrack=null,ccHandT=0;const _tp=new V3();
+function ccSetTrack(it){ccTrack=it;const c=$('#ccTrackChip');if(it){c.textContent='🎯 追蹤：'+spInfo(it.k).name+'  ✕';c.style.display='inline-block';ccPatrol=false;}else c.style.display='none';}
+$('#ccTrackChip').onclick=()=>ccSetTrack(null);
+function nearestCam(p){let bi=0,bd=1e9;cctvs.forEach((c,i)=>{const d=c.head.position.distanceTo(p);if(d<bd){bd=d;bi=i;}});return bi;}
+function trackBirdObs(it){it.obj.getWorldPosition(_tp);const i=nearestCam(_tp);
+  if(!cctvOn)enterCCTV(i,false);else{ccCur=i;ccSplit=false;ccUI();}ccSetTrack(it);closeModal('birds');$('#info').classList.add('hide');}
+function updateTrack(dt){if(!ccTrack||!cctvOn||ccSplit)return;
+  ccTrack.obj.getWorldPosition(_tp);_tp.y+=ccTrack.h*0.5;
+  ccHandT-=dt;if(ccHandT<0){ccHandT=2;const i=nearestCam(_tp);if(i!==ccCur&&cctvs[i].head.position.distanceTo(_tp)<cctvs[ccCur].head.position.distanceTo(_tp)*0.6){ccCur=i;ccUI();sndClick();}}
+  const c=cctvs[ccCur],dx=_tp.x-c.head.position.x,dy=_tp.y-c.head.position.y,dz=_tp.z-c.head.position.z,hd=Math.hypot(dx,dz),dist=Math.hypot(hd,dy);
+  c.tp=Math.atan2(dx,dz);c.tt=clamp(Math.atan2(dy,hd),-1.35,0.2);
+  const ang=2*Math.atan(ccTrack.h*1.4/dist)*180/Math.PI;c.tf=clamp(ang/0.35,CC_FOV/15,CC_FOV);}
+/* 鳥類清單 */
+function birdCount(k){return birdObs.filter(o=>o.k===k).length;}
+function renderBirdSheet(){
+  $('#birdSeenTxt').textContent=`觀察紀錄 ${birdSeen.size} / ${BIRD_KEYS.length} 種`;
+  $('#birdRows').innerHTML=BIRD_KEYS.map(k=>{const s=spInfo(k),seen=birdSeen.has(k);
+    return `<div class="brow"><i style="background:${s.sw}"></i><div class="bt"><b>${s.name}</b> <small>${birdCount(k)} 隻 · ${seen?'<span class="ok">✓ 已觀察</span>':'尚未觀察'}</small><p>${s.desc}</p></div><button data-find="${k}">📹 找牠</button></div>`;}).join('');}
+$('#birdRows').addEventListener('click',e=>{const b=e.target.closest('[data-find]');if(!b)return;const k=b.dataset.find;
+  const list=birdObs.filter(o=>o.k===k),still=list.filter(o=>!o.flying());const pick=(still.length?still:list)[(Math.random()*(still.length||list.length))|0];if(pick)trackBirdObs(pick);});
+$('#bBirds').onclick=()=>{renderBirdSheet();openModal('birds');};
+$('#ccBirds').onclick=()=>{renderBirdSheet();openModal('birds');};
+$('#birdsDone').onclick=()=>closeModal('birds');
+$('#ccFindBtn').onclick=()=>{const it=birdObsByObj.get(selectedBird);if(it)trackBirdObs(it);};
+let selectedBird=null;
+
+/* ---------- 收成：牽網、撈魚、貨車載走 ---------- */
+const HV={on:false,phase:null,t:0,netZ:44,k:0,R:8,jumpRate:0,speed:1,auto:true,caught:{fish:0,shrimp:0},trips:0,crateFill:0,cap:10,scoopN:3,hold:0,before:null,cyc:0,beepT:0,eng:null,truckX:120,truckV:0};
+INFO.truck=['冷藏貨車','收成日來載魚蝦的貨車，工人把一籃籃漁獲扛上車，加冰後直接送往魚市場。'];
+INFO.net=['收成魚網','長長的牽網，上緣綁著一排橘色浮球、下緣有鉛墜貼著池底。工人在兩岸拉著網慢慢往前走，把魚蝦趕到池邊再撈起來。'];
+/* 魚網（浮球線＋網片） */
+const NET_N=56;
+const netTex=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');g.clearRect(0,0,64,64);g.strokeStyle='rgba(235,240,230,.95)';g.lineWidth=3;
+  g.beginPath();g.moveTo(0,0);g.lineTo(64,64);g.moveTo(64,0);g.lineTo(0,64);g.stroke();const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;return t;})();
+const netGeo=new THREE.BufferGeometry();
+{const pos=new Float32Array((NET_N+1)*2*3),uv=new Float32Array((NET_N+1)*2*2),idx=[];
+ for(let i=0;i<NET_N;i++){const a=i*2,b=a+1,c=a+2,d=a+3;idx.push(a,b,c,b,d,c);}
+ netGeo.setAttribute('position',new THREE.BufferAttribute(pos,3));netGeo.setAttribute('uv',new THREE.BufferAttribute(uv,2));netGeo.setIndex(idx);}
+const netMesh=new THREE.Mesh(netGeo,new THREE.MeshBasicMaterial({map:netTex,transparent:true,opacity:0.75,side:THREE.DoubleSide,depthWrite:false,color:0xdfe6d8}));
+netMesh.frustumCulled=false;netMesh.visible=false;netMesh.renderOrder=1;netMesh.userData.key='net';scene.add(netMesh);
+const netFloats=new THREE.InstancedMesh(new THREE.SphereGeometry(0.16,8,6),new THREE.MeshLambertMaterial({color:0xf08a24}),NET_N+1);
+netFloats.frustumCulled=false;netFloats.visible=false;netFloats.userData.key='net';scene.add(netFloats);
+const netRopeGeo=new THREE.BufferGeometry().setFromPoints(Array.from({length:NET_N+1},()=>new V3()));
+const netRope=new THREE.Line(netRopeGeo,new THREE.LineBasicMaterial({color:0xf5f0e0}));netRope.frustumCulled=false;netRope.visible=false;scene.add(netRope);
+const _nd=new THREE.Object3D(),_c1=new V3(),_c2=new V3(),_np=new V3();
+function cubic(a,b,c,d,t,out){const u=1-t;return out.set(u*u*u*a.x+3*u*u*t*b.x+3*u*t*t*c.x+t*t*t*d.x,0,u*u*u*a.z+3*u*u*t*b.z+3*u*t*t*c.z+t*t*t*d.z);}
+function updateNet(){
+  const L=HV.crew[0].pos,R=HV.crew[1].pos,k=HV.phase==='close'?HV.k:(HV.phase==='scoop'||HV.phase==='leave'?1:0);
+  _c1.set(lerp(-16.5,-HV.R,k),0,lerp(HV.netZ+5.3,-37,k));_c2.set(lerp(16.5,HV.R,k),0,lerp(HV.netZ+5.3,-37,k));
+  const pos=netGeo.attributes.position.array,uv=netGeo.attributes.uv.array,rp=netRopeGeo.attributes.position.array;let len=0,px=0,pz=0;
+  for(let i=0;i<=NET_N;i++){const t=i/NET_N;cubic(L,_c1,_c2,R,t,_np);const x=_np.x,z=_np.z;if(i)len+=Math.hypot(x-px,z-pz);px=x;pz=z;
+    const top=0.03+0.025*Math.sin(x*0.6+T*2),bot=Math.max(terrainH(x,z)+0.05,-1.55);
+    pos.set([x,top,z,x,Math.min(bot,top-0.05),z],i*6);uv.set([len/0.7,1,len/0.7,0],i*4);rp.set([x,top+0.04,z],i*3);
+    _nd.position.set(x,top+0.04,z);_nd.updateMatrix();netFloats.setMatrixAt(i,_nd.matrix);}
+  netGeo.attributes.position.needsUpdate=true;netGeo.attributes.uv.needsUpdate=true;netGeo.computeBoundingSphere();
+  netRopeGeo.attributes.position.needsUpdate=true;netFloats.instanceMatrix.needsUpdate=true;}
+function netZAt(x){return HV.netZ+4*Math.sin(Math.PI*clamp((x+49.6)/99.2,0,1));}
+function hvConstrain(p){if(!HV.on)return;
+  if(HV.phase==='truck'||HV.phase==='drag'){const lim=netZAt(p.x)-0.9;if(p.z>lim)p.z=lim;}
+  else if(HV.phase==='close'||HV.phase==='scoop'||HV.phase==='leave'){const k=HV.phase==='close'?HV.k:1;
+    const zmax=lerp(netZAt(p.x)-0.9,-41,k),xmax=lerp(46,HV.R-0.9,k);if(p.z>zmax)p.z=zmax;p.x=clamp(p.x,-xmax,xmax);if(p.z<-48)p.z=-48;}}
+function hvTarget(t){
+  if(HV.phase==='close'||HV.phase==='scoop'||HV.phase==='leave'){t.set(rand(-HV.R+1.5,HV.R-1.5),rand(-0.9,-0.3),rand(-47.5,-41.8));}
+  else{const x=rand(-40,40),zm=netZAt(x)-4;t.set(x,rand(-1.1,-0.4),zm>-44?rand(-44,zm):-44);}}
+/* 貨車 */
+function buildTruck(){const g=new THREE.Group();g.userData.key='truck';const B=new THREE.BoxGeometry(1,1,1);
+  const ps=[];
+  ps.push(part(B,0x3a3d42,M(-0.1,0.72,0,0,0,0,6.0,0.28,1.7)));
+  ps.push(part(B,0xf2f2ef,M(2.35,1.55,0,0,0,0,1.5,1.45,1.92)));
+  ps.push(part(B,0xf2f2ef,M(2.95,1.05,0,0,0,0,0.5,0.5,1.92)));
+  ps.push(part(B,0x22344a,M(3.08,1.9,0,0,0,-0.12,0.06,0.62,1.7)));
+  for(const s of[1,-1])ps.push(part(B,0x22344a,M(2.5,1.92,0.965*s,0,0,0,0.8,0.5,0.02)));
+  ps.push(part(B,0xd8d8d0,M(3.22,0.85,0,0,0,0,0.12,0.22,1.9)));
+  for(const s of[1,-1]){ps.push(part(B,0xfff3c0,M(3.25,1.08,0.72*s,0,0,0,0.04,0.14,0.26)));ps.push(part(B,0xc22a2a,M(-3.12,0.95,0.82*s,0,0,0,0.04,0.12,0.18)));}
+  ps.push(part(B,0x8a8f95,M(-0.8,0.93,0,0,0,0,4.6,0.1,2.0)));
+  for(const s of[1,-1])ps.push(part(B,0x2f6fb0,M(-0.8,1.25,0.97*s,0,0,0,4.6,0.5,0.06)));
+  ps.push(part(B,0x2f6fb0,M(1.47,1.4,0,0,0,0,0.08,0.8,2.0)));
+  ps.push(part(B,0x2f6fb0,M(-3.08,1.25,0,0,0,0,0.06,0.5,2.0)));
+  const body=new THREE.Mesh(merge(ps),vcMat({shininess:40}));body.castShadow=true;g.add(body);
+  const c=document.createElement('canvas');c.width=256;c.height=96;const x=c.getContext('2d');x.fillStyle='#f2f2ef';x.fillRect(0,0,256,96);x.fillStyle='#1f5f9a';
+  x.font='bold 46px "PingFang TC","Noto Sans TC",sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('故鄉水產',128,40);x.font='bold 22px sans-serif';x.fillText('活魚 · 冷藏配送',128,78);
+  const lt=new THREE.CanvasTexture(c);
+  for(const s of[1,-1]){const pl=new THREE.Mesh(new THREE.PlaneGeometry(1.2,0.45),new THREE.MeshBasicMaterial({map:lt}));pl.position.set(2.25,1.32,0.965*s);if(s<0)pl.rotation.y=Math.PI;g.add(pl);}
+  const wheels=[];const wg=merge([part(new THREE.CylinderGeometry(0.42,0.42,0.3,18),0x1b1b1b,M(0,0,0,Math.PI/2,0,0)),part(new THREE.CylinderGeometry(0.2,0.2,0.32,12),0xa0a4a8,M(0,0,0,Math.PI/2,0,0))]);
+  for(const wx of[2.25,-1.85])for(const s of[1,-1]){const w=new THREE.Mesh(wg,vcMat());w.position.set(wx,0.42,0.86*s);w.castShadow=true;g.add(w);wheels.push(w);}
+  const crateGeo=merge([part(B,0x2a7fd0,M(0,0,0,0,0,0,0.62,0.34,0.44)),part(B,0xc9d4da,M(0,0.16,0,0,0,0,0.54,0.04,0.36)),part(B,0xe8f4fa,M(0.12,0.185,0.05,0,0,0,0.2,0.03,0.16))]);
+  const crates=[];for(let i=0;i<12;i++){const lay=i>=6?1:0,j=i%6,cx=-0.2-(j%3)*0.72-0.6,cz=(j<3?0.45:-0.45);
+    const m=new THREE.Mesh(crateGeo,vcMat());m.position.set(cx,1.15+lay*0.36,cz);m.visible=false;m.castShadow=true;g.add(m);crates.push(m);}
+  g.visible=false;scene.add(g);return {g,wheels,crates,crateGeo};}
+let TRUCK=null;
+const TRUCK_Z=-54.3;
+function placeTruck(x){const t=TRUCK;const hf=terrainH(x+2.2,TRUCK_Z),hb=terrainH(x-1.9,TRUCK_Z);
+  t.g.position.set(x,(hf+hb)/2,TRUCK_Z);t.g.rotation.set(0,0,Math.atan2(hf-hb,4.1));}
+/* 工人 */
+const WORKERS=[
+  Object.assign({},CHARS[2],{shirt:0xf0ede4,capCol:0x8a2222,scale:1.0}),
+  Object.assign({},CHARS[2],{shirt:0xe0b23a,hat:'douli',hairStyle:'short',skin:0xb07a52,scale:0.98}),
+  Object.assign({},CHARS[0],{shirt:0x5f7f9f,sleeve:'short',towel:false,hat:'cap',capCol:0x2a5a3a,scale:1.0}),
+];
+function wpose(wp,moving,arms){const s=moving?Math.sin(wp):0;
+  return Object.assign({tz:-0.08,ty:0,shR:-0.35*s,elR:0.35,abR:-0.08,shL:0.35*s,elL:0.35,abL:0.08,hipR:0.45*s,kneeR:-0.5*Math.max(0,-s)-0.08,hipL:-0.45*s,kneeL:-0.5*Math.max(0,s)-0.08,pelY:moving?-0.02-0.02*Math.abs(s):0},arms||{});}
+function mkCrew(ch,x,z){const P2=buildPerson(ch);scene.add(P2.root);const c={P:P2,pos:new V3(x,0,z),yaw:0,wp:0,moving:false,state:'wait',arms:null};placeCrew(c);return c;}
+function placeCrew(c){c.P.root.position.set(c.pos.x,terrainH(c.pos.x,c.pos.z),c.pos.z);c.P.root.rotation.y=c.yaw;}
+function walkTo(c,x,z,spd,dt){const dx=x-c.pos.x,dz=z-c.pos.z,d=Math.hypot(dx,dz);if(d<0.05){c.moving=false;return true;}
+  const s=Math.min(d,spd*dt);c.pos.x+=dx/d*s;c.pos.z+=dz/d*s;c.yaw=angLerp(c.yaw,Math.atan2(-dz,dx),Math.min(1,dt*6));c.wp+=s*3.2;c.moving=true;return false;}
+function face(c,yaw,dt){c.yaw=angLerp(c.yaw,yaw,Math.min(1,dt*4));}
+/* 撈網與岸邊籃子 */
+let dipNet=null,shoreCrate=null,shorePile=null,carryCrate=null;
+function buildDipNet(parent){const pv=new THREE.Group();pv.rotation.order='YZX';pv.position.set(0.2,1.22,0.05);parent.add(pv);
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.022,0.026,2.6,7).rotateZ(-Math.PI/2).translate(1.3,0,0),lamb(0xb79d5c));pole.castShadow=true;pv.add(pole);
+  const hg=new THREE.Group();hg.position.x=2.62;pv.add(hg);
+  hg.add(new THREE.Mesh(new THREE.TorusGeometry(0.32,0.018,6,24).rotateX(Math.PI/2),lamb(0x5a5f63)));
+  hg.add(new THREE.Mesh(new THREE.ConeGeometry(0.31,0.45,16,1,true).rotateX(Math.PI).translate(0,-0.23,0),new THREE.MeshBasicMaterial({map:netTex,transparent:true,opacity:0.8,side:THREE.DoubleSide,depthWrite:false,color:0xdfe6d8})));
+  const fishIn=[];for(let i=0;i<3;i++){const f=new THREE.Mesh(fishGeo,fishMat);f.scale.setScalar(0.42);f.position.set(rand(-0.12,0.12),-0.08+i*0.05,rand(-0.12,0.12));f.rotation.set(rand(-0.4,0.4),rand(0,6),rand(-0.3,0.3));f.visible=false;hg.add(f);fishIn.push(f);}
+  return {pv,hg,fishIn};}
+const SCOOP_POS=new V3(0,0,-49.6),CRATE_POS=new V3(2.6,0,-49.95),CARRY_WAIT=new V3(3.5,0,-50.6),TRUCK_REAR=new V3(-3.9,0,TRUCK_Z);
+function hvLabel(){const el=$('#hvCount');el.textContent=`已收：虱目魚 ${HV.caught.fish} 尾 · 草蝦 ${HV.caught.shrimp} 隻 · 上車 ${HV.trips*2} 籃`;}
+function hvCaption(t){$('#hvCap').textContent=t;}
+/* 開始 / 結束 */
+function hvAsk(){if(HV.on){toast('正在收成中');return;}
+  if(!fishes.length&&!shrimps.length){toast('池裡沒有魚蝦可以收成，先去「放養數量」放魚苗吧');return;}
+  $('#hvAskTxt').textContent=`池裡現在有虱目魚 ${fishes.length} 尾、草蝦 ${shrimps.length} 隻。`;openModal('hvConfirm');}
+function hvStart(){closeModal('hvConfirm');if(raftState.phase){toast('等竹筏餵完料再收成');return;}
+  if(cctvOn)exitCCTV();
+  Object.assign(HV,{on:true,phase:'truck',t:0,netZ:44,k:0,jumpRate:0.01,speed:1,auto:true,caught:{fish:0,shrimp:0},trips:0,crateFill:0,hold:0,cyc:0.86,beepT:0,truckX:120,truckV:0,
+    before:{fish:fishes.length,shrimp:shrimps.length}});
+  const total=fishes.length+shrimps.length;HV.scoopN=Math.max(2,Math.ceil(total/14));HV.cap=Math.max(8,Math.ceil(total/5));
+  if(!TRUCK)TRUCK=buildTruck();TRUCK.g.visible=true;TRUCK.crates.forEach(c=>c.visible=false);placeTruck(HV.truckX);
+  HV.crew=[mkCrew(WORKERS[0],-50.2,44),mkCrew(WORKERS[1],50.2,44)];HV.crew[0].yaw=HV.crew[1].yaw=Math.PI/2;
+  netMesh.visible=netFloats.visible=netRope.visible=true;
+  follow=null;goal=null;setView(null);$('#info').classList.add('hide');
+  $('#hvBar').classList.add('show');$('#hvFast').classList.remove('on');$('#hvFast').textContent='⏩ 加速';$('#hvCam').style.display='none';
+  hvCaption('收成日：冷藏貨車倒車開上堤岸，工人在北邊兩岸拉好魚網');hvLabel();
+  P.root.visible=false;
+  if(snd&&!HV.eng){try{const o=actx.createOscillator();o.type='sawtooth';o.frequency.value=55;const f=actx.createBiquadFilter();f.type='lowpass';f.frequency.value=220;const g=actx.createGain();g.gain.value=0;o.connect(f);f.connect(g);g.connect(snd.out);o.start();HV.eng={o,g};}catch(e){}}
+  updateFeedButtons();}
+function hvFinish(){
+  [...HV.crew,HV.scooper,HV.carrier].forEach(c=>{if(c)scene.remove(c.P.root);});HV.crew=[];HV.scooper=HV.carrier=null;
+  [shoreCrate,shorePile].forEach(o=>{if(o)scene.remove(o);});shoreCrate=shorePile=null;dipNet=null;
+  netMesh.visible=netFloats.visible=netRope.visible=false;TRUCK.g.visible=false;P.root.visible=true;
+  if(HV.eng){try{HV.eng.o.stop();}catch(e){}HV.eng=null;}
+  HV.on=false;HV.phase=null;$('#hvBar').classList.remove('show');
+  $('#hvDoneTxt').innerHTML=`<div class="hvres"><b>${HV.caught.fish}</b><span>尾虱目魚</span></div><div class="hvres"><b>${HV.caught.shrimp}</b><span>隻草蝦</span></div><div class="hvres"><b>${HV.trips*2}</b><span>籃上車</span></div>`;
+  openModal('hvDone');updateFeedButtons();follow=null;setGoal(new V3(0,0,0),125,0.75,0.95);setView('all');}
+function hvRestock(){closeModal('hvDone');const b=HV.before||{fish:72,shrimp:42};
+  for(let i=0;i<b.fish;i++)addFish(0.35);for(let i=0;i<b.shrimp;i++)addShrimp(0.4);
+  toast(`放了 ${b.fish} 尾虱目魚苗、${b.shrimp} 隻蝦苗，會慢慢長大`);}
+$('#bHarvest').onclick=hvAsk;$('#hvGo').onclick=hvStart;$('#hvNo').onclick=()=>closeModal('hvConfirm');
+$('#hvRestock').onclick=hvRestock;$('#hvLater').onclick=()=>{closeModal('hvDone');toast('池子空了，隨時可以從「⋯ 更多 → 放養數量」放魚苗');};
+$('#hvFast').onclick=()=>{HV.speed=HV.speed>1?1:3;$('#hvFast').classList.toggle('on',HV.speed>1);$('#hvFast').textContent=HV.speed>1?'⏩ 加速中 ×3':'⏩ 加速';};
+$('#hvCam').onclick=()=>{HV.auto=true;$('#hvCam').style.display='none';follow=null;goal=null;};
+canvas.addEventListener('pointerdown',()=>{if(HV.on&&HV.auto){HV.auto=false;$('#hvCam').style.display='inline-block';}});
+/* 撈一網 */
+function hvCatch(){const tip=_np.set(0,0,-47.3);const all=[...fishes.map(f=>({f,d:f.pos.distanceToSquared(tip),fish:true})),...shrimps.map(s=>({s,d:(s.pos.x-tip.x)**2+(s.pos.z-tip.z)**2,fish:false}))].sort((a,b)=>a.d-b.d).slice(0,HV.scoopN);
+  for(const c of all){if(c.fish){const i=fishes.indexOf(c.f);if(i>=0){fishes.splice(i,1);scene.remove(c.f.g);if(follow===c.f.g)follow=null;HV.caught.fish++;}}
+    else{const i=shrimps.indexOf(c.s);if(i>=0){shrimps.splice(i,1);scene.remove(c.s.m);if(follow===c.s.m)follow=null;HV.caught.shrimp++;}}}
+  HV.hold=all.length;dipNet.fishIn.forEach((m,i)=>m.visible=i<Math.min(3,HV.hold));
+  splashRing(0,-47.3,16,0.9);sndSplash(0,-47.3,true);ripple(0,-47.3,0.6);hvLabel();}
+/* 每格更新 */
+function updateHarvest(dt0){if(!HV.on)return;const dt=dt0*HV.speed;HV.t+=dt;const ph=HV.phase;
+  // 貨車
+  let tv=0;
+  if(ph==='truck'){const k=clamp(HV.t/12,0,1),x=120*(1-smooth(0,1,k));tv=(HV.truckX-x)/Math.max(dt,1e-4);HV.truckX=x;
+    HV.beepT-=dt;if(HV.beepT<0&&k<1){HV.beepT=0.75;tone(0.09*att(x,1,TRUCK_Z,30),1050,1050,0.28,'square');}
+    if(HV.t>=12.5){HV.phase='drag';HV.t=0;HV.jumpRate=0.03;hvCaption('兩岸的工人拉著魚網往南走，把魚蝦慢慢趕到池子南邊');}}
+  else if(ph==='leave'){const x=HV.truckX+Math.min(14,HV.t*3)*dt;tv=x-HV.truckX;tv/=Math.max(dt,1e-4);HV.truckX=x;
+    if(HV.truckX>140){hvFinish();return;}}
+  placeTruck(HV.truckX);TRUCK.wheels.forEach(w=>w.rotation.z-=tv*dt/0.42);
+  if(HV.eng){const a=att(HV.truckX,1,TRUCK_Z,30);HV.eng.g.gain.setTargetAtTime((0.03+Math.min(0.12,Math.abs(tv)*0.012))*a,actx.currentTime,0.2);HV.eng.o.frequency.setTargetAtTime(50+Math.abs(tv)*3,actx.currentTime,0.3);}
+  const [cL,cR]=HV.crew;
+  const pull={tz:0.25,shR:1.05,elR:0.45,abR:0.1,shL:1.05,elL:0.45,abL:-0.1};
+  if(ph==='truck'){cL.pos.set(-50.2,0,netZAt(-49.6));cR.pos.set(50.2,0,netZAt(49.6));}
+  else if(ph==='drag'){const k=clamp(HV.t/32,0,1);HV.netZ=lerp(44,-42,k);
+    walkTo(cL,-50.2,HV.netZ,99,dt);walkTo(cR,50.2,HV.netZ,99,dt);cL.moving=cR.moving=k<1;cL.wp+=dt*4;cR.wp+=dt*4;face(cL,Math.PI/2,dt);face(cR,Math.PI/2,dt);
+    if(k>=1){HV.phase='close';HV.t=0;HV.jumpRate=0.12;HV.crew.forEach(c=>c.leg=0);
+      HV.scooper=mkCrew(Object.assign({},CHARS[charIdx]),TRUCK_REAR.x,TRUCK_REAR.z);HV.carrier=mkCrew(WORKERS[2],TRUCK_REAR.x-0.8,TRUCK_REAR.z);
+      dipNet=buildDipNet(HV.scooper.P.root);
+      shoreCrate=new THREE.Mesh(TRUCK.crateGeo,vcMat());shoreCrate.position.set(CRATE_POS.x,terrainH(CRATE_POS.x,CRATE_POS.z)+0.17,CRATE_POS.z);scene.add(shoreCrate);
+      shorePile=new THREE.Mesh(new THREE.SphereGeometry(1,12,8),vcMat());shorePile.geometry=merge([part(new THREE.SphereGeometry(1,12,8),0xd7dde0)]);shorePile.scale.set(0.27,0.001,0.19);shorePile.position.copy(shoreCrate.position).y+=0.15;scene.add(shorePile);
+      carryCrate=new THREE.Mesh(TRUCK.crateGeo,vcMat());carryCrate.position.set(0.42,0.95,0);carryCrate.visible=false;HV.carrier.P.root.add(carryCrate);
+      hvCaption('收網！兩邊的人沿著池岸跑向中間，把魚網圍成一個網袋');}}
+  else if(ph==='close'){
+    for(const [c,s] of [[cL,-1],[cR,1]]){if(c.leg===0){if(walkTo(c,50.2*s,-49.8,3.8,dt))c.leg=1;}else walkTo(c,HV.R*s,-49.9,3.8,dt);}
+HV.k=clamp(1-(Math.abs(cL.pos.x)-HV.R)/(50.2-HV.R),0,1)*0.85+(cL.leg?0.15:clamp((-42-cL.pos.z)/7.8,0,1)*0.15);
+    walkTo(HV.scooper,SCOOP_POS.x,SCOOP_POS.z,1.6,dt);walkTo(HV.carrier,CARRY_WAIT.x,CARRY_WAIT.z,1.6,dt);
+    if(!cL.moving&&!cR.moving&&!HV.scooper.moving){HV.k=1;HV.phase='scoop';HV.t=0;HV.jumpRate=0.3;hvCaption(`${CHARS[charIdx].name}用撈網一網一網把魚蝦撈進籃子，搬運工扛上貨車`);}}
+  else if(ph==='scoop'){const left=fishes.length+shrimps.length;
+    face(HV.scooper,-Math.PI/2,dt);
+    // 撈網動作
+    const prev=HV.cyc;if(left>0||HV.hold>0||HV.cyc<0.86)HV.cyc=(HV.cyc+dt/2.4)%1;const c=HV.cyc;
+    let z=0.45,y=0;
+    if(c<0.3)z=lerp(0.45,-0.58,smooth(0,0.3,c));else if(c<0.42)z=-0.58+Math.sin(c*60)*0.04;else if(c<0.58)z=lerp(-0.58,0.5,smooth(0.42,0.58,c));
+    else if(c<0.78){z=0.5;y=lerp(0,1.35,smooth(0.58,0.78,c));}else if(c<0.86){y=1.35;z=lerp(0.5,0.05,smooth(0.78,0.86,c));}else{y=lerp(1.35,0,smooth(0.86,1,c));z=lerp(0.05,0.45,smooth(0.86,1,c));}
+    dipNet.pv.rotation.set(0,y,z);dipNet.hg.rotation.z=-z;
+    if(prev<0.3&&c>=0.3&&left>0)splashRing(0,-47.3,8,0.6);
+    if(prev<0.45&&c>=0.45&&left>0)hvCatch();
+    if(prev<0.82&&c>=0.82&&HV.hold>0){HV.crateFill+=HV.hold;HV.hold=0;dipNet.fishIn.forEach(m=>m.visible=false);tone(0.06*att(2.6,0,-50,15),300,180,0.12,'triangle');}
+    HV.scooper.arms={tz:-0.25-Math.min(0,z)*0.4,ty:y*0.55,shR:0.9-z*0.7,elR:0.55,abR:-0.05,shL:0.75-z*0.7,elL:0.75,abL:0.15};
+    shorePile.scale.y=Math.max(0.001,Math.min(1,HV.crateFill/HV.cap))*0.08;
+    // 搬運工
+    const cr=HV.carrier;
+    if(cr.state==='wait'){face(cr,Math.atan2(-(CRATE_POS.z-cr.pos.z),CRATE_POS.x-cr.pos.x),dt);
+      if(HV.crateFill>=HV.cap||(left===0&&HV.hold===0&&HV.crateFill>0&&HV.cyc>=0.86)){cr.load=HV.crateFill;HV.crateFill=0;carryCrate.visible=true;cr.state='go';}}
+    else if(cr.state==='go'){if(walkTo(cr,TRUCK_REAR.x,TRUCK_REAR.z,2.2,dt)){HV.trips++;TRUCK.crates.forEach((m,i)=>m.visible=i<Math.min(12,HV.trips*2));carryCrate.visible=false;cr.state='back';hvLabel();tone(0.06*att(TRUCK_REAR.x,1,TRUCK_REAR.z,20),160,120,0.15,'triangle');}}
+    else if(cr.state==='back'){if(walkTo(cr,CARRY_WAIT.x,CARRY_WAIT.z,2.2,dt))cr.state='wait';}
+    cr.arms=carryCrate.visible?{shR:0.75,elR:1.25,shL:0.75,elL:1.25,abR:0.1,abL:-0.1}:null;
+    if(left===0&&HV.hold===0&&HV.crateFill===0&&cr.state==='wait'&&HV.cyc>=0.86){
+      HV.phase='leave';HV.t=0;HV.jumpRate=0;hvCaption('滿載出發！貨車把漁獲送往魚市場');
+      const a=att(HV.truckX,1,TRUCK_Z,30);tone(0.14*a,420,410,0.25,'square');tone(0.14*a,420,410,0.35,'square',0.35);}}
+  // 工人姿勢
+  for(const c of HV.crew){const isPull=ph==='truck'||ph==='drag'||ph==='close';applyPose(c.P,wpose(c.wp,c.moving,isPull?pull:{shR:0.2,elR:0.3,shL:0.2,elL:0.3}),Math.min(1,dt0*10));placeCrew(c);
+    if(!c.moving&&(ph==='scoop'||ph==='leave'))face(c,Math.PI/2,dt);}
+  for(const c of [HV.scooper,HV.carrier]){if(!c)continue;applyPose(c.P,wpose(c.wp,c.moving,c.arms),Math.min(1,dt0*10));placeCrew(c);}
+  updateNet();
+  // 自動運鏡
+  if(HV.auto&&!cctvOn&&!saver){let tg,r,th,phi;
+    if(ph==='truck'){tg=_np.set(HV.truckX*0.85,1.2,TRUCK_Z+3);r=30;th=0.75;phi=0.98;}
+    else if(ph==='drag'){tg=_np.set(0,0,HV.netZ-8);r=62;th=0.25;phi=0.92;}
+    else if(ph==='close'){tg=_np.set(0,0,-44);r=36;th=0.18;phi=0.95;}
+    else if(ph==='scoop'){tg=_np.set(0.3,0.6,-51);r=15;th=0.6;phi=1.12;}
+    else{tg=_np.set(HV.truckX,1.2,TRUCK_Z);r=24;th=0.5;phi=1.0;}
+    const k=1-Math.exp(-dt0*1.5);cam.target.lerp(tg,k);cam.r=lerp(cam.r,r,k);cam.theta=angLerp(cam.theta,th,k);cam.phi=lerp(cam.phi,phi,k);}
+}
+addLabel('🚚 收購貨車',()=>HV.on&&TRUCK?new V3(HV.truckX,4.2,TRUCK_Z):null);
+
+function hvNear(p){if(!HV.on)return false;for(const c of [...HV.crew,HV.scooper,HV.carrier]){if(c&&Math.hypot(c.pos.x-p.x,c.pos.z-p.z)<7)return true;}return false;}
+/* ---------- 模擬 ---------- */
+let S=18,DO=6.2,simAcc=0;
+function flowAt(x,z,out){
+  const r=Math.hypot(x,z);if(r<1||Math.max(Math.abs(x),Math.abs(z))>49){out.x=out.z=0;return out;}
+  const sp=aerF*0.9*smooth(4,24,r)*(1-smooth(40,49,r));
+  out.x=-z/r*sp;out.z=x/r*sp;return out;
+}
+const _f={x:0,z:0},_q=new V3(),_w=new V3();
+function updateHUD(){
+  $('#sal').textContent=S.toFixed(1)+' ‰';
+  $('#salMark').style.left=clamp(S/35*100,0,100)+'%';
+  $('#do').textContent=DO.toFixed(1)+' mg/L';
+  $('#do').style.color=DO<4?'#c0391b':'';
+  let msg,warn=false;
+  if(DO<3.8){msg='⚠️ 溶氧偏低，魚群浮頭！請開水車';warn=true;}
+  else if(S<5){msg='偏淡：草蝦、文蛤不適應';warn=true;}
+  else if(S<15)msg='略淡：虱目魚OK，草蝦文蛤稍差';
+  else if(S<=25)msg='理想混養鹽度 ✓';
+  else if(S<32)msg='偏鹹：仍可養，留意草蝦';
+  else{msg='接近海水：建議抽淡水調降';warn=true;}
+  if(gateState.open&&!warn)msg+='｜海水引入中';
+  if(freshState.on&&!warn)msg+='｜淡水注入中';
+  const st=$('#status');st.textContent=msg;st.classList.toggle('warn',warn);
+  pondMat.color.copy(FRESH_COL).lerp(SALT_COL,clamp(S/34,0,1));
+}
+
+/* ---------- 動畫 ---------- */
+const clock=new THREE.Clock();let T=0,isUnder=false,hudAcc=0,eatAcc=0;
+function animate(){
+  requestAnimationFrame(animate);
+  const dt=Math.min(clock.getDelta(),0.05);T+=dt;
+  updateNight(dt);
+
+  // 狀態
+  aerF+=((aerOn?1:0)-aerF)*Math.min(1,dt*0.8);
+  gateState.t=clamp(gateState.t+(gateState.open?1:-1)*dt*0.3,0,1);
+  freshState.t=clamp(freshState.t+(freshState.on?1:-1)*dt*1.5,0,1);
+  const gF=smooth(0.15,1,gateState.t),fF=freshState.t;simGF=gF;simFF=fF;
+  const rs0=raftState;
+  const feedFish=rs0.type==='fish'&&(rs0.phase==='throw'||rs0.phase==='fold'||T-rs0.lastRel<7);
+  const feedShrimp=rs0.type==='shrimp'&&(rs0.phase==='throw'||rs0.phase==='fold'||T-rs0.lastRel<20);
+  const feeding=feedFish;
+  S+=(gF*0.03*(34-S)+fF*0.03*(0-S)+0.004)*dt;S=clamp(S,0,34.5);
+  const loadK=fishes.length/72*0.6+shrimps.length/42*0.3+clams.count/700*0.1;
+  const doT=3.0+3.5*aerF-(feeding?0.5:0)-1.0*nightK-(loadK-1)*0.9;DO+=(doT-DO)*0.05*dt;
+  const lowDO=DO<3.8;
+  hudAcc+=dt;if(hudAcc>0.25){hudAcc=0;updateHUD();}
+
+  // 池水波紋
+  {const p=pondGeo.attributes.position.array;
+   for(let i=0;i<p.length;i+=3){const x=pondBase[i],z=pondBase[i+2];
+     let y=0.045*Math.sin(x*0.35+T*1.3)+0.035*Math.sin(z*0.42-T*1.1)+0.02*Math.sin((x+z)*0.9+T*2.1);
+     if(aerF>0.02)for(const a of aerators){const dx=x-a.x,dz=z-a.z,r2=dx*dx+dz*dz;if(r2<64){const r=Math.sqrt(r2);y+=aerF*0.11*Math.exp(-r*0.35)*Math.sin(r*2.4-T*9);}}
+     if(gF>0.02){const dx=x,dz=z-52,r2=dx*dx+dz*dz;if(r2<100){const r=Math.sqrt(r2);y+=gF*0.09*Math.exp(-r*0.3)*Math.sin(r*2-T*7);}}
+     p[i+1]=y;}
+   pondGeo.attributes.position.needsUpdate=true;pondGeo.computeVertexNormals();}
+  {const p=seaGeo.attributes.position.array;
+   for(let i=0;i<p.length;i+=3){const x=seaBase[i],zw=seaBase[i+2]+505;const amp=0.03+0.16*smooth(62,140,zw);
+     p[i+1]=amp*(Math.sin(x*0.06+zw*0.05+T*1.1)+0.6*Math.sin(zw*0.13-T*1.6)+0.3*Math.sin(x*0.21-T*2.2));}
+   seaGeo.attributes.position.needsUpdate=true;seaGeo.computeVertexNormals();}
+
+  // 水車
+  for(const a of aerators){
+    for(const w of a.wheels)w.rotation.x+=aerF*9*dt;
+    a.g.position.y=0.03*Math.sin(T*3+a.i);
+    if(aerF>0.3){
+      const c=Math.cos(a.g.rotation.y),s=Math.sin(a.g.rotation.y);
+      const n=Math.random()<aerF*0.9?6:0;
+      for(let k=0;k<n;k++){const lx=(Math.random()<0.5?1:-1)*rand(0.82,1.18),lz=rand(-0.6,-0.3);
+        const vx=rand(-0.4,0.4),vz=-rand(1.8,3.6);
+        splash.spawn(a.x+lx*c+lz*s,0.05,a.z-lx*s+lz*c,vx*c+vz*s,rand(1.5,3.2),-vx*s+vz*c,1.2);}
+      if(Math.random()<dt*8*aerF){const lx=rand(-1.4,1.4),lz=-rand(1,2);foam.spawn(a.x+lx*c+lz*s,0.06,a.z-lx*s+lz*c,-s*1.2,0,-c*1.2,rand(18,28));}
+    }
+  }
+
+  // 閘門
+  panel.position.y=PANEL_CLOSED+PANEL_LIFT*smooth(0,1,gateState.t);
+  if(gateState.t>0&&gateState.t<1)hwheel.rotation.z+=dt*4*(gateState.open?1:-1);
+  if(gF>0.05){
+    for(let k=0;k<Math.round(10*gF);k++)splash.spawn(rand(-3.3,3.3),0.12,54.6,rand(-0.3,0.3),rand(0.4,1.4),-rand(2.5,4.5),1);
+    if(Math.random()<dt*14*gF)foam.spawn(rand(-3,3),0.06,rand(50,53.5),rand(-0.5,0.5),0,-rand(1.6,2.6),rand(14,22));
+    if(Math.random()<dt*6*gF)foam.spawn(rand(-3,3),SEA_Y+0.06,rand(60,75),0,0,-rand(1.5,2.5),4);
+  }
+  // 淡水
+  if(fF>0.05)for(let k=0;k<Math.round(5*fF);k++)splash.spawn(-49.25,0.95+rand(-0.08,0.08),-18+rand(-0.08,0.08),rand(1.6,2.3),rand(-0.1,0.4),rand(-0.15,0.15),2);
+
+  // 竹筏 + 養殖戶
+  {const rs=raftState;
+   if(rs.phase){rs.pt+=dt;
+     if(rs.phase==='fetch'){const k=smooth(0,1,rs.pt/1.3);rs.bag.position.lerpVectors(rs.from,OPEN_POS,k);rs.bag.position.y+=Math.sin(k*Math.PI)*0.55;rs.bag.rotation.y=lerp(rs.rot0,0.35,k);
+       if(rs.pt>=1.3){rs.phase='throw';rs.pt=0;rs.cyc=0.85;}}
+     else if(rs.phase==='throw'){if(rs.pt>=11.5&&rs.cyc>0.85&&rs.cyc<0.95){rs.phase='fold';rs.pt=0;rs.from=rs.bag.position.clone();}}
+     else if(rs.phase==='fold'){const b=bags[rs.type],k=smooth(0,1,rs.pt/1.1);
+       _a.set(1.6,0.1+b.empty.length*0.035,rs.type==='fish'?0.32:-0.32);
+       rs.bag.position.lerpVectors(rs.from,_a,k);rs.bag.position.y+=Math.sin(k*Math.PI)*0.4;rs.bag.scale.y=lerp(1,0.22,k);rs.bag.rotation.y=lerp(0.35,rand(-0.3,0.3)*0+0.1,k);
+       if(rs.pt>=1.1){b.empty.push(rs.bag);rs.bag=null;rs.phase=null;updateFeedButtons();schools.forEach(s=>s.timer=0);}}}
+   rs.v=lerp(rs.v,rs.phase?0:rs.speed,Math.min(1,dt*1.2));rs.a+=rs.v*dt;
+   const Rr=a=>14+3*Math.sin(2*a);
+   const x=Rr(rs.a)*Math.cos(rs.a),z=Rr(rs.a)*Math.sin(rs.a);
+   const nx=Rr(rs.a+0.01)*Math.cos(rs.a+0.01),nz=Rr(rs.a+0.01)*Math.sin(rs.a+0.01);
+   if(HV.on)raft.position.set(-44,0.06+0.03*Math.sin(T*1.7),47.6);else raft.position.set(x,0.06+0.03*Math.sin(T*1.7),z);
+   raft.rotation.y=HV.on?0.15:Math.atan2(-(nz-z),nx-x);
+   raft.rotation.z=0.02*Math.sin(T*1.3);raft.rotation.x=0.02*Math.sin(T*1.1);
+   P.root.rotation.y=angLerp(P.root.rotation.y,rs.phase?-Math.PI/2:0,Math.min(1,dt*3));
+   const sp=Math.sin(T*1.3);let pose;
+   if(rs.phase==='throw'){const prev=rs.cyc;rs.cyc=(rs.cyc+dt/1.7)%1;pose=samplePose(THROW_KEYS,rs.cyc);if(prev<0.66&&rs.cyc>=0.66)releaseFeed();}
+   else if(rs.phase)pose=STAND_POSE;else pose=polePose(sp);
+   P.scoop.visible=rs.phase==='throw';
+   applyPose(P,pose,Math.min(1,dt*(rs.phase==='throw'?14:5)));
+   raft.updateMatrixWorld(true);
+   if(!rs.phase){P.J.hand[0].getWorldPosition(_a);_b.set(-1.0-0.7*sp,-1.6,0.85).applyMatrix4(raft.matrixWorld);}
+   else{_a.set(-0.7,0.17,-0.74).applyMatrix4(raft.matrixWorld);_b.set(2,0.17,-0.74).applyMatrix4(raft.matrixWorld);}
+   pole.position.copy(_a);pole.lookAt(_b);pole.visible=!HV.on;
+  }
+  const raftP=raft.position;
+
+  // 魚群
+  const zone=_zn.set(0,0,1).applyQuaternion(raft.quaternion).multiplyScalar(4).add(raftP);
+  for(const s of schools){
+    s.timer-=dt;
+    if(HV.on){if(s.timer<=0){hvTarget(s.t);s.timer=rand(1,2.5);}s.speed=2.6;}
+    else if(feedFish){if(s.timer<=0){s.t.set(zone.x+rand(-3,3),-0.35,zone.z+rand(-3,3));s.timer=rand(1,2.5);}s.speed=3.6;}
+    else{if(s.timer<=0||s.c.distanceTo(s.t)<2)pickSchoolTarget(s);s.speed=(lowDO?1.2:2.1)*(1-0.45*nightK);if(lowDO)s.t.y=-0.2;}
+    _q.copy(s.t).sub(s.c);const d=_q.length();if(d>0.01)s.c.addScaledVector(_q,Math.min(1,s.speed*dt/d));
+  }
+  for(const f of fishes){
+    if(f.jump){ // 躍出水面
+      f.vel.y-=9.8*dt;f.pos.addScaledVector(f.vel,dt);
+      const hs=Math.hypot(f.vel.x,f.vel.z);
+      f.pitch=Math.atan2(f.vel.y,hs+0.01);f.phase+=dt*24;
+      f.g.position.copy(f.pos);f.g.rotation.set(Math.sin(f.phase*0.4)*0.35,f.yaw,f.pitch);
+      f.tail.rotation.y=Math.sin(f.phase)*0.75;
+      if(f.pos.y<0&&f.vel.y<0){f.jump=false;splashRing(f.pos.x,f.pos.z,20,1.15);sndSplash(f.pos.x,f.pos.z,true);ripple(f.pos.x,f.pos.z,0.7);f.vel.multiplyScalar(0.3);f.pos.y=-0.15;}
+      continue;
+    }
+    const tight=feedFish?0.35:1;
+    _q.copy(f.school.c).addScaledVector(f.off,tight);
+    if(lowDO&&!feedFish)_q.y=-0.2;
+    _q.sub(f.pos);const d=_q.length();
+    const maxS=f.spd*(feedFish?1.6:1);
+    _w.copy(_q).multiplyScalar(d>0.001?Math.min(maxS,d*0.9+0.4)/d:0);
+    _w.x+=Math.sin(T*0.7+f.phase)*0.3;_w.z+=Math.cos(T*0.6+f.phase*1.3)*0.3;
+    f.vel.lerp(_w,Math.min(1,dt*1.6));
+    f.pos.addScaledVector(f.vel,dt);
+    {const fl=HV.on?47.8:45;f.pos.x=clamp(f.pos.x,-fl,fl);f.pos.z=clamp(f.pos.z,-fl,fl);}hvConstrain(f.pos);
+    f.pos.y=clamp(f.pos.y,terrainH(f.pos.x,f.pos.z)+0.3,-0.14);
+    const hs=Math.hypot(f.vel.x,f.vel.z);
+    if(hs>0.05)f.yaw=angLerp(f.yaw,Math.atan2(-f.vel.z,f.vel.x),Math.min(1,dt*4));
+    f.pitch=lerp(f.pitch,clamp(Math.atan2(f.vel.y,hs+0.01),-0.5,0.5),Math.min(1,dt*3));
+    f.phase+=dt*(5+f.vel.length()*5);
+    if(f.grow<1){f.grow=Math.min(1,f.grow+dt/150);f.g.scale.setScalar(f.s0*f.grow);}
+    f.g.position.copy(f.pos);f.g.rotation.set(0,f.yaw+Math.sin(f.phase)*0.08,f.pitch);
+    f.tail.rotation.y=Math.sin(f.phase)*0.55;
+    // 搶食時躍出水面（平時偶爾也會跳）
+    const zx=f.pos.x-zone.x,zz=f.pos.z-zone.z;
+    const jr=HV.on?HV.jumpRate:feedFish&&zx*zx+zz*zz<42&&f.pos.y>-0.9?0.45:0.003;
+    if(Math.random()<dt*jr){f.jump=true;const h=rand(1.2,2.4);f.vel.set(Math.cos(f.yaw)*h,rand(3.4,4.9),-Math.sin(f.yaw)*h);f.pos.y=-0.05;splashRing(f.pos.x,f.pos.z,10,0.8);sndSplash(f.pos.x,f.pos.z,false);}
+    if(lowDO&&!feedFish&&Math.random()<dt*0.15)for(let k=0;k<3;k++)splash.spawn(f.pos.x,0.02,f.pos.z,rand(-0.3,0.3),rand(0.5,1),rand(-0.3,0.3),0.4);
+  }
+
+  // 草蝦
+  for(const s of shrimps){
+    s.timer-=dt;
+    if(s.timer<=0){
+      if(HV.on){hvTarget(s.t);s.timer=rand(1,3);}
+      else if(feedShrimp&&Math.hypot(s.pos.x-zone.x,s.pos.z-zone.z)<32){s.t.set(zone.x+rand(-3.5,3.5),0,zone.z+rand(-3.5,3.5));s.timer=rand(2,4);}
+      else{s.t.set(clamp(s.pos.x+rand(-8,8),-43,43),0,clamp(s.pos.z+rand(-8,8),-43,43));s.timer=rand(3,9);}
+      if(Math.random()<0.1+0.2*nightK)s.flick=0.35;
+    }
+    let speed=HV.on?0.9:0.25+0.4*nightK;
+    if(s.flick>0){s.flick-=dt;s.pos.x-=Math.cos(s.yaw)*3*dt;s.pos.z+=Math.sin(s.yaw)*3*dt;}
+    else{_q.set(s.t.x-s.pos.x,0,s.t.z-s.pos.z);const d=_q.length();
+      if(d>0.3){s.yaw=angLerp(s.yaw,Math.atan2(-_q.z,_q.x),Math.min(1,dt*2));s.pos.x+=Math.cos(s.yaw)*speed*dt;s.pos.z-=Math.sin(s.yaw)*speed*dt;}}
+    {const sl=HV.on?47.8:44;s.pos.x=clamp(s.pos.x,-sl,sl);s.pos.z=clamp(s.pos.z,-sl,sl);}hvConstrain(s.pos);
+    const hop=s.flick>0?Math.sin((0.35-s.flick)/0.35*Math.PI)*0.25:0;
+    if(s.grow<1){s.grow=Math.min(1,s.grow+dt/150);s.s=s.s0*s.grow;s.m.scale.setScalar(s.s);}
+    s.m.position.set(s.pos.x,terrainH(s.pos.x,s.pos.z)+0.085*s.s+hop+0.01*Math.sin(T*6+s.yaw*3),s.pos.z);
+    s.m.rotation.set(0,s.yaw,s.flick>0?0.25:0);
+  }
+
+  // 蛤蠣冒泡
+  if(clams.count&&Math.random()<dt*4){const c=clamPos[(Math.random()*clams.count)|0];for(let k=0;k<3;k++)bubbles.spawn(c.x+rand(-0.05,0.05),c.y+0.05+k*0.08,c.z+rand(-0.05,0.05),0,rand(0.3,0.5),0,8);}
+  if(aerF>0.3&&Math.random()<dt*20*aerF){const a=aerators[(Math.random()*4)|0];bubbles.spawn(a.x+rand(-1.5,1.5),rand(-0.8,-0.2),a.z+rand(-1.5,1.5),0,rand(0.25,0.5),0,4);}
+
+  // 粒子更新
+  {const P=splash.pos,Vv=splash.vel;
+   for(let k=0;k<splash.n;k++){if(splash.life[k]<=0)continue;const j=k*3;
+     Vv[j+1]-=9.8*dt;P[j]+=Vv[j]*dt;P[j+1]+=Vv[j+1]*dt;P[j+2]+=Vv[j+2]*dt;splash.life[k]-=dt;
+     if((P[j+1]<0.0&&Vv[j+1]<0)||splash.life[k]<=0){if(Math.random()<0.04)foam.spawn(P[j],0.06,P[j+2],Vv[j]*0.3,0,Vv[j+2]*0.3,rand(6,12));splash.kill(k);}}
+   splash.geo.attributes.position.needsUpdate=true;}
+  for(const pool of [pelletsF,pelletsS]){const P=pool.pos,Vv=pool.vel,floatT=pool===pelletsF;
+    for(let k=0;k<pool.n;k++){if(pool.life[k]<=0)continue;const j=k*3;pool.life[k]-=dt;
+      if(pool.st[k]===0){Vv[j+1]-=9.8*dt;P[j]+=Vv[j]*dt;P[j+1]+=Vv[j+1]*dt;P[j+2]+=Vv[j+2]*dt;
+        if(P[j+1]<=0.03){pool.st[k]=1;Vv[j]*=0.04;Vv[j+2]*=0.04;Vv[j+1]=floatT?0:-0.14;if(Math.random()<0.4)splash.spawn(P[j],0.02,P[j+2],rand(-0.2,0.2),rand(0.4,0.8),rand(-0.2,0.2),0.3);}}
+      else if(pool.st[k]===1){
+        if(floatT){flowAt(P[j],P[j+2],_f);P[j]+=(Vv[j]+_f.x*0.5)*dt;P[j+2]+=(Vv[j+2]+_f.z*0.5)*dt;P[j+1]=0.035+0.04*Math.sin(P[j]*0.35+T*1.3);}
+        else{P[j]+=Vv[j]*dt;P[j+1]+=Vv[j+1]*dt;P[j+2]+=Vv[j+2]*dt;if(P[j+1]<terrainH(P[j],P[j+2])+0.03)pool.st[k]=2;}}
+      if(pool.life[k]<=0)pool.kill(k);}
+    pool.geo.attributes.position.needsUpdate=true;}
+  eatAcc+=dt;
+  if(eatAcc>0.1){eatAcc=0;
+    {const P=pelletsF.pos;for(let k=0;k<pelletsF.n;k++){if(pelletsF.life[k]<=0||pelletsF.st[k]!==1)continue;const j=k*3;
+      for(const f of fishes){if(f.pos.y<-0.75)continue;const dx=f.pos.x-P[j],dz=f.pos.z-P[j+2];if(dx*dx+dz*dz<0.7){pelletsF.kill(k);if(Math.random()<0.3)splash.spawn(P[j],0.02,P[j+2],0,0.8,0,0.3);break;}}}}
+    {const P=pelletsS.pos;for(let k=0;k<pelletsS.n;k++){if(pelletsS.life[k]<=0||pelletsS.st[k]!==2)continue;const j=k*3;
+      for(const s of shrimps){const dx=s.pos.x-P[j],dz=s.pos.z-P[j+2];if(dx*dx+dz*dz<0.5){pelletsS.kill(k);break;}}}}
+  }
+  {const P=bubbles.pos,Vv=bubbles.vel;
+   for(let k=0;k<bubbles.n;k++){if(bubbles.life[k]<=0)continue;const j=k*3;bubbles.life[k]-=dt;
+     P[j]+=Math.sin(T*5+k)*0.05*dt;P[j+1]+=Vv[j+1]*dt;
+     if(P[j+1]>-0.02||bubbles.life[k]<=0)bubbles.kill(k);}
+   bubbles.geo.attributes.position.needsUpdate=true;}
+  {const P=foam.pos,Vv=foam.vel;
+   for(let k=0;k<foam.n;k++){if(foam.life[k]<=0)continue;const j=k*3;foam.life[k]-=dt;
+     const damp=Math.max(0,1-dt*0.5);Vv[j]*=damp;Vv[j+2]*=damp;
+     flowAt(P[j],P[j+2],_f);
+     P[j]+=(Vv[j]+_f.x)*dt;P[j+2]+=(Vv[j+2]+_f.z)*dt;
+     if(P[j+2]<54.8){P[j+1]=0.06+0.04*Math.sin(P[j]*0.35+T*1.3);}
+     if(foam.life[k]<=0||Math.max(Math.abs(P[j]),Math.abs(P[j+2]))>50&&P[j+2]<54)foam.kill(k);}
+   foam.geo.attributes.position.needsUpdate=true;}
+
+  // 白鷺鷥
+  for(const f of flyers){f.a+=f.w*dt;const x=f.cx+f.r*Math.cos(f.a),z=f.cz+f.r*Math.sin(f.a),y=f.h+Math.sin(T*0.5+f.r)*1.5;
+    const vx=-Math.sin(f.a)*Math.sign(f.w),vz=Math.cos(f.a)*Math.sign(f.w);
+    f.g.position.set(x,y,z);f.g.rotation.set(0,Math.atan2(-vz,vx),0);
+    const fl=Math.sin(T*6+f.r)*0.6;f.wl.rotation.x=-fl;f.wr.rotation.x=fl;}
+  egrets.forEach((e,i)=>{e.rotation.z=0.06*Math.sin(T*0.8+i*2);});
+
+  // 螢幕保護：自動運鏡
+  if(saver){svT+=dt;if(goal)goal.theta+=dt*0.05;else cam.theta+=dt*0.05;if(svT>16)svNext();}
+  // 相機
+  if(goal){const k=1-Math.exp(-dt*3);cam.target.lerp(goal.t,k);cam.r=lerp(cam.r,goal.r,k);cam.theta=angLerp(cam.theta,goal.theta,k);cam.phi=lerp(cam.phi,goal.phi,k);
+    if(Math.abs(cam.r-goal.r)<0.05&&cam.target.distanceTo(goal.t)<0.05)goal=null;}
+  if(follow){if(goal)goal.t.copy(follow.position);else cam.target.lerp(follow.position,1-Math.exp(-dt*4));}
+  const sp=Math.sin(cam.phi);
+  camera.position.set(cam.target.x+cam.r*sp*Math.sin(cam.theta),cam.target.y+cam.r*Math.cos(cam.phi),cam.target.z+cam.r*sp*Math.cos(cam.theta));
+  if(Math.abs(camera.position.x)<129&&Math.abs(camera.position.z)<129)camera.position.y=Math.max(camera.position.y,terrainH(camera.position.x,camera.position.z)+0.3);
+  else camera.position.y=Math.max(camera.position.y,0.8);
+  camera.lookAt(cam.target);
+  sky.position.copy(camera.position);
+  const uw=!cctvOn&&camera.position.y<-0.03&&Math.max(Math.abs(camera.position.x),Math.abs(camera.position.z))<52;
+  if(uw!==isUnder){isUnder=uw;scene.fog=uw?uwFog:skyFog;scene.background.copy(uw?uwFog.color:skyFog.color);sky.visible=!uw;$('#uw').style.display=uw?'block':'none';}
+
+  updateLabels();updateRipples(dt);updateFollowBar();updateSound(dt);updateBirds(dt);updateHarvest(dt);updateTrack(dt);updateCCTV(dt);
+  if(cctvOn)renderCCTV();else renderer.render(scene,camera);
+  updateBirdBoxes();
+  if(wantShot){wantShot=false;takePhoto();}
+  fpsMonitor();
+}
+
+function hideHint(){const h=$('#hint');if(h.style.opacity!=='0'){h.style.opacity='0';}}
+setTimeout(hideHint,6000);
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+updateHUD();
+animate();
+})();
+</script>
+<script>
+if('serviceWorker' in navigator&&location.protocol==='https:'){addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
+</script>
+</body>
+</html>
