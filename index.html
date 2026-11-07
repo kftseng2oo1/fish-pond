@@ -141,6 +141,14 @@ body.cctv #hvBar{bottom:calc(128px + env(safe-area-inset-bottom))}
 #hvDoneTxt{display:flex;gap:8px;margin-top:6px}
 .hvres{flex:1;text-align:center;background:#eef5f1;border-radius:12px;padding:10px 4px}
 .hvres b{display:block;font-size:24px;color:#1f6b57}.hvres span{font-size:12.5px;color:#46605a}
+.hvsteps{margin:8px 0 4px;padding-left:20px;font-size:13px;line-height:1.6;color:#334a43}
+#hvShip button{background:#dfe7e3;color:#13261f;font-size:14px}
+#hvShip button.on{background:#1f6b57;color:#fff}
+.hvtab{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+.hvtab th,.hvtab td{padding:5px 4px;border-bottom:1px solid #e3ebe7;text-align:right}
+.hvtab th:first-child,.hvtab td:first-child{text-align:left}
+.hvtab th{color:#5b736c;font-weight:600}.hvtab tr.tot td{font-weight:800;color:#1f6b57}
+.hvtab small{font-weight:600;color:#5b736c}
 #err{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:30px;text-align:center}
 @media (max-width:420px){#hud{width:172px;font-size:12px}#hint{top:auto;bottom:calc(110px + env(safe-area-inset-bottom))}}
 </style>
@@ -228,11 +236,12 @@ body.cctv #hvBar{bottom:calc(128px + env(safe-area-inset-bottom))}
   <div class="tip">打開監視器，畫面裡的鳥會被自動辨識框起來；看清楚一種就會記入觀察紀錄。按「找牠」由最近的監視器轉過去追蹤。</div>
   <div id="birdRows"></div><button class="done" id="birdsDone">完成</button></div></div>
 <div id="hvBar" class="card"><div id="hvCap"></div><div id="hvCount"></div><div class="hvBtns"><button id="hvFast">⏩ 加速</button><button id="hvCam">🎥 自動運鏡</button></div></div>
-<div id="hvConfirm" class="modal hide"><div class="sheet card"><h3>🎣 收成季到了</h3><div class="tip" id="hvAskTxt" style="margin-top:0;font-size:14px;color:#13261f"></div>
-  <div class="tip">冷藏貨車會開上堤岸，兩位工人拉著魚網從北往南把魚蝦趕到池邊，收成網袋後，由你選的養殖戶用撈網撈進籃子，搬運工扛上車，最後貨車把漁獲送走。收成後池子會清空，可以再放魚苗。（文蛤留在池底，這次不收）</div>
+<div id="hvConfirm" class="modal hide"><div class="sheet card"><h3>🎣 收成季到了（起魚）</h3><div class="tip" id="hvAskTxt" style="margin-top:0;font-size:14px;color:#13261f"></div>
+  <ol class="hvsteps"><li>停料 24～48 小時，讓魚蝦腸胃排空</li><li>抽水降水位到膝蓋～大腿深，水車拉到岸邊</li><li>穿青蛙裝的工人拉圍網，把魚蝦趕到集魚區</li><li>收網成網袋，撈網撈起</li><li>岸上挑雜物、分大中小、過磅記錄</li><li>冰鎮裝箱或倒進活魚車，快速發車</li><li>抽乾曬坪 7 天，重新進水</li></ol>
+  <div class="tip" style="color:#13261f;font-weight:700">出貨方式</div>
+  <div id="hvShip" class="hvrow" style="margin-top:4px"><button data-ship="ice" class="on">🧊 冰鮮・送魚市場</button><button data-ship="live" class="gray2">🐟 活魚・活魚車</button></div>
   <div class="hvrow"><button id="hvGo">開始收成</button><button id="hvNo" class="gray">再等等</button></div></div></div>
-<div id="hvDone" class="modal hide"><div class="sheet card"><h3>🚚 收成完成，貨車出發了！</h3><div id="hvDoneTxt"></div>
-  <div class="tip">池子現在空了。放魚苗後，小魚小蝦會慢慢長大。</div>
+<div id="hvDone" class="modal hide"><div class="sheet card"><h3>🚚 收成完成！</h3><div id="hvDoneTxt"></div><div id="hvDoneDetail"></div>
   <div class="hvrow"><button id="hvRestock">🐟 放魚苗重新養</button><button id="hvLater" class="gray">先不要</button></div></div></div>
 <div id="picker" class="hide"><div class="sheet card"><h3>選擇竹筏上的養殖戶</h3><div id="chars"></div><button id="pickClose">完成</button></div></div>
 <div id="err" class="card">3D 引擎載入失敗，請確認網路連線後重新整理。</div>
@@ -249,6 +258,7 @@ function smooth(e0,e1,x){const t=clamp((x-e0)/(e1-e0),0,1);return t*t*(3-2*t);}
 function angLerp(a,b,t){let d=b-a;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;return a+d*t;}
 
 const BOTTOM=-1.6;         // 池底
+let WATER=0;               // 池水水位（收成時會降低）
 const SEA_Y=0.15;          // 外海水位（略高於池水，開閘即流入）
 
 /* ---------- 地形 ---------- */
@@ -782,7 +792,7 @@ function releaseFeed(){const rs=raftState;P.J.hand[0].getWorldPosition(_a);
   const fishT=rs.type==='fish',pool=fishT?pelletsF:pelletsS;
   for(let k=0;k<32;k++){const v=rand(2.5,6),l=rand(-2.2,2.2);pool.spawn(_a.x+rand(-0.05,0.05),_a.y,_a.z+rand(-0.05,0.05),_sd.x*v+_rt.x*l,rand(1.2,2.8),_sd.z*v+_rt.z*l,fishT?25:30);}
   rs.lastRel=T;_b.copy(_a).addScaledVector(_sd,4);sndScatter(_b.x,_b.z);}
-function splashRing(x,z,n,str){for(let k=0;k<n;k++){const a=rand(0,6.28),sp=rand(0.5,1.4)*str;splash.spawn(x,0.03,z,Math.cos(a)*sp,rand(1.4,3)*str,Math.sin(a)*sp,1);}
+function splashRing(x,z,n,str){const wy=(z>55?SEA_Y:WATER)+0.03;for(let k=0;k<n;k++){const a=rand(0,6.28),sp=rand(0.5,1.4)*str;splash.spawn(x,wy,z,Math.cos(a)*sp,rand(1.4,3)*str,Math.sin(a)*sp,1);}
   for(let k=0;k<3;k++)foam.spawn(x+rand(-0.3,0.3),0.06,z+rand(-0.3,0.3),rand(-0.3,0.3),0,rand(-0.3,0.3),rand(4,8));}
 
 /* ---------- 海水閘門 ---------- */
@@ -1172,7 +1182,7 @@ document.addEventListener('visibilitychange',()=>{if(!actx)return;try{if(documen
 const ripples=[];const ripGeo=new THREE.RingGeometry(0.9,1,48);ripGeo.rotateX(-Math.PI/2);
 for(let i=0;i<12;i++){const m=new THREE.Mesh(ripGeo,new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0,depthWrite:false}));m.visible=false;m.renderOrder=3;scene.add(m);ripples.push({m,t:0,size:1});}
 let ripI=0;
-function ripple(x,z,size=1){const r=ripples[ripI++%ripples.length];r.m.position.set(x,0.08,z);r.t=0;r.size=size;r.m.visible=true;}
+function ripple(x,z,size=1){const r=ripples[ripI++%ripples.length];r.m.position.set(x,(z>55?SEA_Y:WATER)+0.08,z);r.t=0;r.size=size;r.m.visible=true;}
 function updateRipples(dt){for(const r of ripples){if(!r.m.visible)continue;r.t+=dt;const k=r.t/1.8;if(k>=1){r.m.visible=false;continue;}r.m.scale.setScalar(0.25+k*5*r.size);r.m.material.opacity=0.55*(1-k);}}
 function tapWater(p){lastTap={x:p.x,z:p.z,t:T};ripple(p.x,p.z,1);setTimeout(()=>ripple(p.x,p.z,0.6),200);sndPlop(p.x,p.z);
   for(let k=0;k<6;k++)splash.spawn(p.x,0.03,p.z,rand(-0.4,0.4),rand(0.8,1.6),rand(-0.4,0.4),0.5);
@@ -1446,7 +1456,7 @@ function buildBird(k){
   return {root,bodyG,neckG,headG,legsG,wl,wr,catchFish};
 }
 /* 棲地 */
-function waterLv(x,z){const d=Math.max(Math.abs(x),Math.abs(z));if(d<52&&z<54)return 0;if(z>57)return SEA_Y;return null;}
+function waterLv(x,z){const d=Math.max(Math.abs(x),Math.abs(z));if(d<52&&z<54)return WATER;if(z>57)return SEA_Y;return null;}
 function depthAt(x,z){const L=waterLv(x,z);return L==null?-9:L-terrainH(x,z);}
 const HAB={wade:[0.04,0.26],deep:[0.12,0.42],shore:[-0.25,0.05]};
 function sampleSpot(zone,hab,near,rad){
@@ -1528,7 +1538,7 @@ function updateKF(b,dt){const o=b.o,sp=b.sp;b.t-=dt;const P=KF_PERCH[b.perch];
   else if(b.state==='hover'){b.pos.set(b.dive.x,2.4+Math.sin(T*6)*0.05,b.dive.z);o.bodyG.rotation.z=0.5;wings(b,true,Math.sin(T*sp.flapHz*1.4)*1.0);setBirdPose(b,-0.5,0.2,0,dt);
     if(b.t<=0){b.state='dive';b.t=0.32;}}
   else if(b.state==='dive'){b.pos.y-=dt*8;o.bodyG.rotation.z=-1.45;wings(b,false);setBirdPose(b,-0.2,0.2,0,dt,true);
-    if(b.pos.y<-0.25){b.state='under';b.t=0.25;splashRing(b.pos.x,b.pos.z,12,0.8);ripple(b.pos.x,b.pos.z,0.5);sndSplash(b.pos.x,b.pos.z,false);b.caught=Math.random()<0.55;}}
+    if(b.pos.y<WATER-0.25){b.state='under';b.t=0.25;splashRing(b.pos.x,b.pos.z,12,0.8);ripple(b.pos.x,b.pos.z,0.5);sndSplash(b.pos.x,b.pos.z,false);b.caught=Math.random()<0.55;}}
   else if(b.state==='under'){if(b.t<=0){b.state='rise';b.t=0.45;for(let i=0;i<6;i++)splash.spawn(b.pos.x,0.03,b.pos.z,rand(-0.4,0.4),rand(1,2),rand(-0.4,0.4),0.5);}}
   else if(b.state==='rise'){b.pos.y+=dt*4;o.bodyG.rotation.z=0.8;wings(b,true,Math.sin(T*sp.flapHz)*1);o.catchFish.visible=b.caught;
     if(b.t<=0){b.perch=(Math.random()*KF_PERCH.length)|0;go(KF_PERCH[b.perch],1.8,'back');}}
@@ -1623,13 +1633,23 @@ $('#birdsDone').onclick=()=>closeModal('birds');
 $('#ccFindBtn').onclick=()=>{const it=birdObsByObj.get(selectedBird);if(it)trackBirdObs(it);};
 let selectedBird=null;
 
-/* ---------- 收成：牽網、撈魚、貨車載走 ---------- */
-const HV={on:false,phase:null,t:0,netZ:44,k:0,R:8,jumpRate:0,speed:1,auto:true,caught:{fish:0,shrimp:0},trips:0,crateFill:0,cap:10,scoopN:3,hold:0,before:null,cyc:0,beepT:0,eng:null,truckX:120,truckV:0};
-INFO.truck=['冷藏貨車','收成日來載魚蝦的貨車，工人把一籃籃漁獲扛上車，加冰後直接送往魚市場。'];
-INFO.net=['收成魚網','長長的牽網，上緣綁著一排橘色浮球、下緣有鉛墜貼著池底。工人在兩岸拉著網慢慢往前走，把魚蝦趕到池邊再撈起來。'];
-/* 魚網（浮球線＋網片） */
+/* ---------- 收成（起魚）：停料→降水位→牽網→收網→撈捕→分級過磅→裝箱或活魚車→發車→曬坪→進水 ---------- */
+const HV_W=-0.95;   // 收成時降到的水位（池底 -1.6，剩約 0.6 公尺，大約膝蓋到大腿深）
+function shoreAt(w){const s=clamp((w-BOTTOM)/(-BOTTOM),0,1);let lo=0,hi=1;for(let i=0;i<22;i++){const m=(lo+hi)/2;if(3*m*m-2*m*m*m<s)lo=m;else hi=m;}return 46+4*lo;}
+const HV_SHORE=shoreAt(HV_W);
+const FISH_REAL=350,SHRIMP_REAL=500;                  // 畫面上 1 尾／1 隻 ≈ 實際數量
+const FISH_KG={big:0.6,mid:0.45,small:0.3},SHRIMP_KG=0.035;
+const HV={on:false,phase:null,t:0,netZ:46.5,k:0,R:8,jumpRate:0,speed:1,auto:true,ship:'ice',S:44,
+  caught:{fish:0,shrimp:0},grade:{big:0,mid:0,small:0,shrimp:0},kg:0,crateFill:0,crateItems:[],hold:0,holdItems:[],queue:[],packAcc:0,packUnit:6,boxesReady:0,loaded:0,
+  cyc:0.86,beepT:0,eng:null,truckX:120,truckGo:false,crew:[],before:null,clamBefore:0,nightBefore:false,sortT:0,scaleT:0};
+INFO.truck=['出貨貨車','冰鮮出貨用一般貨車，車斗載滿裝了碎冰的保麗龍箱，直接送往魚市場；活魚出貨則用活魚車，車上水槽持續打氣，送到餐廳或活魚商。'];
+INFO.net=['圍網（牽網）','長長的圍網，上緣綁一排浮球、下緣有鉛墜貼著池底。穿青蛙裝的工人在水裡拉著網從池子一端慢慢往前，把魚蝦趕到集魚區。'];
+INFO.station=['分級過磅區','撈上岸的魚蝦在這裡快速挑出雜物、依大小分級，放進簍筐過磅記錄斤兩，作為和盤商結算的依據，再裝箱上車。'];
+const AER_PARK=[[-36,47.4],[36,47.4],[14,47.4],[-14,47.4]];
+const aerCables=[];scene.children.forEach(o=>{if(o.isLine&&o.material===cableMat){const p=o.geometry.attributes.position;if(p.count===11&&aerators.some(a=>Math.abs(p.getX(0)-a.x)<0.1&&Math.abs(p.getZ(0)-a.z)<0.1))aerCables.push(o);}});
+/* 圍網 */
 const NET_N=56;
-const netTex=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');g.clearRect(0,0,64,64);g.strokeStyle='rgba(235,240,230,.95)';g.lineWidth=3;
+const netTex=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');g.strokeStyle='rgba(235,240,230,.95)';g.lineWidth=3;
   g.beginPath();g.moveTo(0,0);g.lineTo(64,64);g.moveTo(64,0);g.lineTo(0,64);g.stroke();const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;return t;})();
 const netGeo=new THREE.BufferGeometry();
 {const pos=new Float32Array((NET_N+1)*2*3),uv=new Float32Array((NET_N+1)*2*2),idx=[];
@@ -1641,70 +1661,131 @@ const netFloats=new THREE.InstancedMesh(new THREE.SphereGeometry(0.16,8,6),new T
 netFloats.frustumCulled=false;netFloats.visible=false;netFloats.userData.key='net';scene.add(netFloats);
 const netRopeGeo=new THREE.BufferGeometry().setFromPoints(Array.from({length:NET_N+1},()=>new V3()));
 const netRope=new THREE.Line(netRopeGeo,new THREE.LineBasicMaterial({color:0xf5f0e0}));netRope.frustumCulled=false;netRope.visible=false;scene.add(netRope);
-const _nd=new THREE.Object3D(),_c1=new V3(),_c2=new V3(),_np=new V3();
+const _nd=new THREE.Object3D(),_c1=new V3(),_c2=new V3(),_np=new V3(),_np2=new V3();
 function cubic(a,b,c,d,t,out){const u=1-t;return out.set(u*u*u*a.x+3*u*u*t*b.x+3*u*t*t*c.x+t*t*t*d.x,0,u*u*u*a.z+3*u*u*t*b.z+3*u*t*t*c.z+t*t*t*d.z);}
+function netK(){return HV.phase==='close'?HV.k:(HV.phase==='scoop'||HV.phase==='leave'?1:0);}
+function netBow(){return clamp(HV_SHORE-0.6-HV.netZ,0,4);}
+function netPoint(t,out){const L=HV.crew[0].pos,R=HV.crew[1].pos,k=netK(),bz=HV.netZ+netBow()*1.33;
+  _c1.set(lerp(-16,-HV.R,k),0,lerp(bz,-37,k));_c2.set(lerp(16,HV.R,k),0,lerp(bz,-37,k));return cubic(L,_c1,_c2,R,t,out);}
 function updateNet(){
-  const L=HV.crew[0].pos,R=HV.crew[1].pos,k=HV.phase==='close'?HV.k:(HV.phase==='scoop'||HV.phase==='leave'?1:0);
-  _c1.set(lerp(-16.5,-HV.R,k),0,lerp(HV.netZ+5.3,-37,k));_c2.set(lerp(16.5,HV.R,k),0,lerp(HV.netZ+5.3,-37,k));
   const pos=netGeo.attributes.position.array,uv=netGeo.attributes.uv.array,rp=netRopeGeo.attributes.position.array;let len=0,px=0,pz=0;
-  for(let i=0;i<=NET_N;i++){const t=i/NET_N;cubic(L,_c1,_c2,R,t,_np);const x=_np.x,z=_np.z;if(i)len+=Math.hypot(x-px,z-pz);px=x;pz=z;
-    const top=0.03+0.025*Math.sin(x*0.6+T*2),bot=Math.max(terrainH(x,z)+0.05,-1.55);
-    pos.set([x,top,z,x,Math.min(bot,top-0.05),z],i*6);uv.set([len/0.7,1,len/0.7,0],i*4);rp.set([x,top+0.04,z],i*3);
+  for(let i=0;i<=NET_N;i++){netPoint(i/NET_N,_np);const x=_np.x,z=_np.z;if(i)len+=Math.hypot(x-px,z-pz);px=x;pz=z;
+    const top=WATER+0.03+0.025*Math.sin(x*0.6+T*2),bot=Math.min(Math.max(terrainH(x,z)+0.05,-1.55),top-0.05);
+    pos.set([x,top,z,x,bot,z],i*6);uv.set([len/0.7,1,len/0.7,0],i*4);rp.set([x,top+0.04,z],i*3);
     _nd.position.set(x,top+0.04,z);_nd.updateMatrix();netFloats.setMatrixAt(i,_nd.matrix);}
   netGeo.attributes.position.needsUpdate=true;netGeo.attributes.uv.needsUpdate=true;netGeo.computeBoundingSphere();
   netRopeGeo.attributes.position.needsUpdate=true;netFloats.instanceMatrix.needsUpdate=true;}
-function netZAt(x){return HV.netZ+4*Math.sin(Math.PI*clamp((x+49.6)/99.2,0,1));}
-function hvConstrain(p){if(!HV.on)return;
-  if(HV.phase==='truck'||HV.phase==='drag'){const lim=netZAt(p.x)-0.9;if(p.z>lim)p.z=lim;}
-  else if(HV.phase==='close'||HV.phase==='scoop'||HV.phase==='leave'){const k=HV.phase==='close'?HV.k:1;
-    const zmax=lerp(netZAt(p.x)-0.9,-41,k),xmax=lerp(46,HV.R-0.9,k);if(p.z>zmax)p.z=zmax;p.x=clamp(p.x,-xmax,xmax);if(p.z<-48)p.z=-48;}}
-function hvTarget(t){
-  if(HV.phase==='close'||HV.phase==='scoop'||HV.phase==='leave'){t.set(rand(-HV.R+1.5,HV.R-1.5),rand(-0.9,-0.3),rand(-47.5,-41.8));}
-  else{const x=rand(-40,40),zm=netZAt(x)-4;t.set(x,rand(-1.1,-0.4),zm>-44?rand(-44,zm):-44);}}
-/* 貨車 */
-function buildTruck(){const g=new THREE.Group();g.userData.key='truck';const B=new THREE.BoxGeometry(1,1,1);
+function netZAt(x){const S=HV_SHORE-0.2;return HV.netZ+netBow()*Math.sin(Math.PI*clamp((x+S)/(2*S),0,1));}
+function hvConstrain(p){if(!HV.on)return;const S=HV.S;p.x=clamp(p.x,-S,S);p.z=clamp(p.z,-S,S);const ph=HV.phase;
+  if(ph==='drag'){const lim=netZAt(p.x)-0.9;if(p.z>lim)p.z=lim;}
+  else if(ph==='close'||ph==='scoop'||ph==='leave'){const k=ph==='close'?HV.k:1;
+    const zmax=lerp(netZAt(p.x)-0.9,-41,k),xmax=lerp(S,HV.R-0.9,k);if(p.z>zmax)p.z=zmax;p.x=clamp(p.x,-xmax,xmax);}}
+function hvTarget(t){const ph=HV.phase,ymax=WATER-0.25,ymin=Math.max(-1.35,WATER-0.85);
+  if(ph==='close'||ph==='scoop'||ph==='leave')t.set(rand(-HV.R+1.5,HV.R-1.5),rand(ymin,ymax),rand(-HV.S+0.5,-41.8));
+  else if(ph==='drag'){const x=rand(-38,38),zm=netZAt(x)-4;t.set(x,rand(ymin,ymax),zm>-42?rand(-42,zm):-42);}
+  else t.set(rand(-38,38),rand(ymin,ymax),rand(-38,38));}
+/* 貨車：冰鮮（保麗龍箱）／活魚車（打氣水槽） */
+const TRUCK_Z=-54.5;
+const BOX_ICE=merge([part(new THREE.BoxGeometry(1,1,1),0xf5f5f0,M(0,0,0,0,0,0,0.62,0.36,0.44)),part(new THREE.BoxGeometry(1,1,1),0xe2f2fa,M(0,0.185,0,0,0,0,0.54,0.02,0.36)),
+  part(new THREE.BoxGeometry(1,1,1),0xffffff,M(0.1,0.2,0.06,0,0.4,0,0.14,0.03,0.12)),part(new THREE.BoxGeometry(1,1,1),0xffffff,M(-0.12,0.2,-0.07,0,1.1,0,0.12,0.03,0.1))]);
+const BOX_LIVE=merge([part(new THREE.BoxGeometry(1,1,1),0x2a7fd0,M(0,0,0,0,0,0,0.62,0.34,0.44)),part(new THREE.BoxGeometry(1,1,1),0x6fa8b8,M(0,0.15,0,0,0,0,0.54,0.03,0.36)),
+  part(new THREE.BoxGeometry(1,1,1),0xd7dde0,M(0.08,0.17,0.04,0,0.5,0,0.3,0.03,0.07))]);
+const CRATE_GEO=merge([part(new THREE.BoxGeometry(1,1,1),0x2a7fd0,M(0,0,0,0,0,0,0.62,0.34,0.44)),part(new THREE.BoxGeometry(1,1,1),0x1d5f9f,M(0,0.12,0,0,0,0,0.56,0.1,0.38))]);
+function buildTruck(type){const g=new THREE.Group();g.userData.key='truck';const B=new THREE.BoxGeometry(1,1,1);
   const ps=[];
   ps.push(part(B,0x3a3d42,M(-0.1,0.72,0,0,0,0,6.0,0.28,1.7)));
-  ps.push(part(B,0xf2f2ef,M(2.35,1.55,0,0,0,0,1.5,1.45,1.92)));
-  ps.push(part(B,0xf2f2ef,M(2.95,1.05,0,0,0,0,0.5,0.5,1.92)));
+  const cabC=type==='live'?0x2f6fb0:0xf2f2ef;
+  ps.push(part(B,cabC,M(2.35,1.55,0,0,0,0,1.5,1.45,1.92)));ps.push(part(B,cabC,M(2.95,1.05,0,0,0,0,0.5,0.5,1.92)));
   ps.push(part(B,0x22344a,M(3.08,1.9,0,0,0,-0.12,0.06,0.62,1.7)));
   for(const s of[1,-1])ps.push(part(B,0x22344a,M(2.5,1.92,0.965*s,0,0,0,0.8,0.5,0.02)));
   ps.push(part(B,0xd8d8d0,M(3.22,0.85,0,0,0,0,0.12,0.22,1.9)));
   for(const s of[1,-1]){ps.push(part(B,0xfff3c0,M(3.25,1.08,0.72*s,0,0,0,0.04,0.14,0.26)));ps.push(part(B,0xc22a2a,M(-3.12,0.95,0.82*s,0,0,0,0.04,0.12,0.18)));}
   ps.push(part(B,0x8a8f95,M(-0.8,0.93,0,0,0,0,4.6,0.1,2.0)));
-  for(const s of[1,-1])ps.push(part(B,0x2f6fb0,M(-0.8,1.25,0.97*s,0,0,0,4.6,0.5,0.06)));
-  ps.push(part(B,0x2f6fb0,M(1.47,1.4,0,0,0,0,0.08,0.8,2.0)));
-  ps.push(part(B,0x2f6fb0,M(-3.08,1.25,0,0,0,0,0.06,0.5,2.0)));
+  if(type==='ice'){for(const s of[1,-1])ps.push(part(B,0x2f6fb0,M(-0.8,1.25,0.97*s,0,0,0,4.6,0.5,0.06)));
+    ps.push(part(B,0x2f6fb0,M(1.47,1.4,0,0,0,0,0.08,0.8,2.0)));ps.push(part(B,0x2f6fb0,M(-3.08,1.25,0,0,0,0,0.06,0.5,2.0)));}
+  else{for(const cx of[-2.05,0.15]){const tc=0x2a6fb5;
+      ps.push(part(B,tc,M(cx,1.5,0.86,0,0,0,2.0,1.0,0.06)));ps.push(part(B,tc,M(cx,1.5,-0.86,0,0,0,2.0,1.0,0.06)));
+      ps.push(part(B,tc,M(cx+0.97,1.5,0,0,0,0,0.06,1.0,1.78)));ps.push(part(B,tc,M(cx-0.97,1.5,0,0,0,0,0.06,1.0,1.78)));
+      ps.push(part(B,0xd0d4d6,M(cx,2.02,0,0,0,0,2.02,0.05,0.12)));}
+    ps.push(part(new THREE.BoxGeometry(1,1,1),0x707a80,M(1.3,1.25,0.6,0,0,0,0.35,0.5,0.4)));
+    ps.push(cyl([1.3,1.55,0.6],[0.15,2.05,0.2],0.03,0x303438,5));ps.push(cyl([1.3,1.55,0.6],[-2.05,2.05,0.2],0.03,0x303438,5));}
   const body=new THREE.Mesh(merge(ps),vcMat({shininess:40}));body.castShadow=true;g.add(body);
-  const c=document.createElement('canvas');c.width=256;c.height=96;const x=c.getContext('2d');x.fillStyle='#f2f2ef';x.fillRect(0,0,256,96);x.fillStyle='#1f5f9a';
-  x.font='bold 46px "PingFang TC","Noto Sans TC",sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('故鄉水產',128,40);x.font='bold 22px sans-serif';x.fillText('活魚 · 冷藏配送',128,78);
+  const c=document.createElement('canvas');c.width=256;c.height=96;const x=c.getContext('2d');x.fillStyle=type==='live'?'#2f6fb0':'#f2f2ef';x.fillRect(0,0,256,96);x.fillStyle=type==='live'?'#ffffff':'#1f5f9a';
+  x.font='bold 46px "PingFang TC","Noto Sans TC",sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('故鄉水產',128,40);x.font='bold 22px sans-serif';x.fillText(type==='live'?'活魚運搬 · 全程打氣':'冰鮮直送 · 魚市場',128,78);
   const lt=new THREE.CanvasTexture(c);
   for(const s of[1,-1]){const pl=new THREE.Mesh(new THREE.PlaneGeometry(1.2,0.45),new THREE.MeshBasicMaterial({map:lt}));pl.position.set(2.25,1.32,0.965*s);if(s<0)pl.rotation.y=Math.PI;g.add(pl);}
   const wheels=[];const wg=merge([part(new THREE.CylinderGeometry(0.42,0.42,0.3,18),0x1b1b1b,M(0,0,0,Math.PI/2,0,0)),part(new THREE.CylinderGeometry(0.2,0.2,0.32,12),0xa0a4a8,M(0,0,0,Math.PI/2,0,0))]);
   for(const wx of[2.25,-1.85])for(const s of[1,-1]){const w=new THREE.Mesh(wg,vcMat());w.position.set(wx,0.42,0.86*s);w.castShadow=true;g.add(w);wheels.push(w);}
-  const crateGeo=merge([part(B,0x2a7fd0,M(0,0,0,0,0,0,0.62,0.34,0.44)),part(B,0xc9d4da,M(0,0.16,0,0,0,0,0.54,0.04,0.36)),part(B,0xe8f4fa,M(0.12,0.185,0.05,0,0,0,0.2,0.03,0.16))]);
-  const crates=[];for(let i=0;i<12;i++){const lay=i>=6?1:0,j=i%6,cx=-0.2-(j%3)*0.72-0.6,cz=(j<3?0.45:-0.45);
-    const m=new THREE.Mesh(crateGeo,vcMat());m.position.set(cx,1.15+lay*0.36,cz);m.visible=false;m.castShadow=true;g.add(m);crates.push(m);}
-  g.visible=false;scene.add(g);return {g,wheels,crates,crateGeo};}
-let TRUCK=null;
-const TRUCK_Z=-54.3;
-function placeTruck(x){const t=TRUCK;const hf=terrainH(x+2.2,TRUCK_Z),hb=terrainH(x-1.9,TRUCK_Z);
-  t.g.position.set(x,(hf+hb)/2,TRUCK_Z);t.g.rotation.set(0,0,Math.atan2(hf-hb,4.1));}
+  const items=[],tanks=[];
+  if(type==='ice'){for(let i=0;i<12;i++){const lay=i>=6?1:0,j=i%6,cx=-0.2-(j%3)*0.72-0.6,cz=(j<3?0.45:-0.45);
+      const m=new THREE.Mesh(BOX_ICE,vcMat());m.position.set(cx,1.17+lay*0.38,cz);m.visible=false;m.castShadow=true;g.add(m);items.push(m);}}
+  else{for(const cx of[-2.05,0.15]){const w=new THREE.Mesh(new THREE.PlaneGeometry(1.88,1.66).rotateX(-Math.PI/2),new THREE.MeshPhongMaterial({color:0x4f8f9a,shininess:80,transparent:true,opacity:0.85}));
+      w.position.set(cx,1.02,0);w.visible=false;g.add(w);tanks.push(w);}}
+  g.visible=false;scene.add(g);return {g,wheels,items,tanks,type};}
+const TRUCKS={};let TRUCK=null;
+function placeTruck(x){const hf=terrainH(x+2.2,TRUCK_Z),hb=terrainH(x-1.9,TRUCK_Z);
+  TRUCK.g.position.set(x,(hf+hb)/2,TRUCK_Z);TRUCK.g.rotation.set(0,0,Math.atan2(hf-hb,4.1));}
+function showLoad(){const n=HV.loaded,tot=Math.max(1,HV.boxTotal);
+  if(TRUCK.type==='ice')TRUCK.items.forEach((m,i)=>m.visible=i<Math.min(12,Math.ceil(n/tot*12)));
+  else TRUCK.tanks.forEach(w=>{w.visible=n>0;w.position.y=1.02+0.85*Math.min(1,n/tot);});}
+/* 分級過磅區 */
+const ST={x:6.8,z:-52.95};
+let station=null;
+function labelTex(txt,bg,fg,w=256,h=128,font=64){const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.fillStyle=bg;g.fillRect(0,0,w,h);
+  g.fillStyle=fg;g.font=`bold ${font}px "PingFang TC","Noto Sans TC",sans-serif`;g.textAlign='center';g.textBaseline='middle';g.fillText(txt,w/2,h/2+4);return {c,g,t:new THREE.CanvasTexture(c)};}
+function buildStation(){const g=new THREE.Group();g.userData.key='station';const y0=terrainH(ST.x,ST.z);
+  const B=new THREE.BoxGeometry(1,1,1),ps=[];
+  ps.push(part(B,0xd9d4c6,M(ST.x,y0+0.82,ST.z,0,0,0,2.0,0.06,0.85)));
+  for(const dx of[-0.9,0.9])for(const dz of[-0.36,0.36])ps.push(part(B,0x8a8f92,M(ST.x+dx,y0+0.4,ST.z+dz,0,0,0,0.05,0.8,0.05)));
+  ps.push(part(B,0x46505a,M(ST.x-1.75,y0+0.06,ST.z,0,0,0,0.62,0.12,0.62)));
+  ps.push(part(B,0x46505a,M(ST.x-1.75,y0+0.55,ST.z-0.28,0,0,0,0.05,0.9,0.05)));
+  ps.push(part(B,0x2b2f33,M(ST.x-1.75,y0+1.05,ST.z-0.28,0,0,0,0.42,0.24,0.08)));
+  const m=new THREE.Mesh(merge(ps),vcMat());m.castShadow=true;g.add(m);
+  const scr=labelTex('0.0 kg','#0d2a18','#7dff9a',256,96,40);
+  const sp=new THREE.Mesh(new THREE.PlaneGeometry(0.38,0.15),new THREE.MeshBasicMaterial({map:scr.t}));sp.position.set(ST.x-1.75,y0+1.05,ST.z-0.235);g.add(sp);
+  const sp2=sp.clone();sp2.rotation.y=Math.PI;sp2.position.z=ST.z-0.325;g.add(sp2);
+  const grades=[['big','虱目魚 大'],['mid','虱目魚 中'],['small','虱目魚 小'],['shrimp','草蝦']],baskets={};
+  grades.forEach(([k,n],i)=>{const bx=ST.x+1.55+i*0.72,bz=ST.z;const by=terrainH(bx,bz);
+    const bm=new THREE.Mesh(CRATE_GEO,vcMat());bm.position.set(bx,by+0.17,bz);bm.castShadow=true;g.add(bm);
+    const pile=new THREE.Mesh(new THREE.SphereGeometry(1,10,6),new THREE.MeshPhongMaterial({color:k==='shrimp'?0x5d6a64:0xcfd9de,shininess:90}));pile.scale.set(0.27,0.001,0.19);pile.position.set(bx,by+0.32,bz);g.add(pile);
+    const lt=labelTex(n.replace('虱目魚 ','魚'),k==='shrimp'?'#c0462a':'#1f6b57','#ffffff',192,96,48);
+    const lp=new THREE.Mesh(new THREE.PlaneGeometry(0.42,0.21),new THREE.MeshBasicMaterial({map:lt.t}));lp.position.set(bx,by+0.42,bz+0.235);g.add(lp);
+    baskets[k]={pile,n:0};});
+  const stack=new THREE.Group();stack.position.set(4.6,terrainH(4.6,-56.4),-56.4);g.add(stack);
+  scene.add(g);return {g,scr,baskets,stack,shown:''};}
+function setScale(kg){const s=station,txt=kg.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})+' kg';if(s.shown===txt)return;s.shown=txt;
+  const g=s.scr.g;g.fillStyle='#0d2a18';g.fillRect(0,0,256,96);g.fillStyle='#7dff9a';g.font='bold 40px ui-monospace,Menlo,monospace';g.textAlign='center';g.textBaseline='middle';
+  g.fillText(txt,128,52);s.scr.t.needsUpdate=true;}
+function showStack(){const st=station.stack;while(st.children.length<HV.boxesReady){const i=st.children.length,m=new THREE.Mesh(HV.ship==='ice'?BOX_ICE:BOX_LIVE,vcMat());
+    m.position.set((i%2)*0.7,0.18+Math.floor(i/4)*0.37,Math.floor((i%4)/2)*0.5);m.castShadow=true;st.add(m);}
+  while(st.children.length>HV.boxesReady)st.remove(st.children[st.children.length-1]);}
+/* 抽水機（降水位、抽乾） */
+let drainPump=null;
+function buildDrainPump(){const g=new THREE.Group();const z=8,pm=lamb(0x8fa3ad);
+  const p1=new THREE.Mesh(merge([cyl([46.2,-1.35,z],[53.4,1.45,z],0.16,0x8fa3ad,10),cyl([53.4,1.45,z],[59.6,0.9,z],0.16,0x8fa3ad,10)]),vcMat());p1.castShadow=true;g.add(p1);
+  const box=new THREE.Mesh(new THREE.BoxGeometry(0.9,0.7,0.7),lamb(0xd8762a));box.position.set(53.6,1.6,z);box.castShadow=true;g.add(box);
+  g.visible=false;scene.add(g);return g;}
 /* 工人 */
 const WORKERS=[
   Object.assign({},CHARS[2],{shirt:0xf0ede4,capCol:0x8a2222,scale:1.0}),
-  Object.assign({},CHARS[2],{shirt:0xe0b23a,hat:'douli',hairStyle:'short',skin:0xb07a52,scale:0.98}),
+  Object.assign({},CHARS[2],{shirt:0xe0b23a,hat:'douli',skin:0xb07a52,scale:0.98}),
+  Object.assign({},CHARS[2],{shirt:0x8fbf6a,capCol:0x1f2a44,scale:1.01}),
+  Object.assign({},CHARS[2],{shirt:0xd96a4a,hat:'douli',skin:0xb98060,scale:0.97}),
   Object.assign({},CHARS[0],{shirt:0x5f7f9f,sleeve:'short',towel:false,hat:'cap',capCol:0x2a5a3a,scale:1.0}),
+  Object.assign({},CHARS[1],{shirt:0x9b6fb0,armCover:0x2f4f8f,scale:0.93}),
+  Object.assign({},CHARS[0],{shirt:0xe8e3d6,sleeve:'short',towel:true,hat:'cap',capCol:0x7a3030,scale:0.99}),
 ];
 function wpose(wp,moving,arms){const s=moving?Math.sin(wp):0;
   return Object.assign({tz:-0.08,ty:0,shR:-0.35*s,elR:0.35,abR:-0.08,shL:0.35*s,elL:0.35,abL:0.08,hipR:0.45*s,kneeR:-0.5*Math.max(0,-s)-0.08,hipL:-0.45*s,kneeL:-0.5*Math.max(0,s)-0.08,pelY:moving?-0.02-0.02*Math.abs(s):0},arms||{});}
-function mkCrew(ch,x,z){const P2=buildPerson(ch);scene.add(P2.root);const c={P:P2,pos:new V3(x,0,z),yaw:0,wp:0,moving:false,state:'wait',arms:null};placeCrew(c);return c;}
+function mkCrew(ch,x,z,role){const P2=buildPerson(ch);scene.add(P2.root);const c={P:P2,pos:new V3(x,0,z),yaw:0,wp:0,moving:false,state:'wait',arms:null,role,path:null};placeCrew(c);HV.crew.push(c);return c;}
 function placeCrew(c){c.P.root.position.set(c.pos.x,terrainH(c.pos.x,c.pos.z),c.pos.z);c.P.root.rotation.y=c.yaw;}
 function walkTo(c,x,z,spd,dt){const dx=x-c.pos.x,dz=z-c.pos.z,d=Math.hypot(dx,dz);if(d<0.05){c.moving=false;return true;}
   const s=Math.min(d,spd*dt);c.pos.x+=dx/d*s;c.pos.z+=dz/d*s;c.yaw=angLerp(c.yaw,Math.atan2(-dz,dx),Math.min(1,dt*6));c.wp+=s*3.2;c.moving=true;return false;}
+function walkPath(c,pts,spd,dt){if(!c.path){c.path=pts.map(p=>p.slice());}const p=c.path[0];if(walkTo(c,p[0],p[1],spd,dt)){c.path.shift();if(!c.path.length){c.path=null;return true;}}return false;}
 function face(c,yaw,dt){c.yaw=angLerp(c.yaw,yaw,Math.min(1,dt*4));}
-/* 撈網與岸邊籃子 */
-let dipNet=null,shoreCrate=null,shorePile=null,carryCrate=null;
+const SOUTH=Math.PI/2,NORTH=-Math.PI/2;
+/* 撈網 */
+let dipNet=null,shoreCrate=null,shorePile=null,carryCrate=null,loadBox=null;
 function buildDipNet(parent){const pv=new THREE.Group();pv.rotation.order='YZX';pv.position.set(0.2,1.22,0.05);parent.add(pv);
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.022,0.026,2.6,7).rotateZ(-Math.PI/2).translate(1.3,0,0),lamb(0xb79d5c));pole.castShadow=true;pv.add(pole);
   const hg=new THREE.Group();hg.position.x=2.62;pv.add(hg);
@@ -1712,117 +1793,203 @@ function buildDipNet(parent){const pv=new THREE.Group();pv.rotation.order='YZX';
   hg.add(new THREE.Mesh(new THREE.ConeGeometry(0.31,0.45,16,1,true).rotateX(Math.PI).translate(0,-0.23,0),new THREE.MeshBasicMaterial({map:netTex,transparent:true,opacity:0.8,side:THREE.DoubleSide,depthWrite:false,color:0xdfe6d8})));
   const fishIn=[];for(let i=0;i<3;i++){const f=new THREE.Mesh(fishGeo,fishMat);f.scale.setScalar(0.42);f.position.set(rand(-0.12,0.12),-0.08+i*0.05,rand(-0.12,0.12));f.rotation.set(rand(-0.4,0.4),rand(0,6),rand(-0.3,0.3));f.visible=false;hg.add(f);fishIn.push(f);}
   return {pv,hg,fishIn};}
-const SCOOP_POS=new V3(0,0,-49.6),CRATE_POS=new V3(2.6,0,-49.95),CARRY_WAIT=new V3(3.5,0,-50.6),TRUCK_REAR=new V3(-3.9,0,TRUCK_Z);
-function hvLabel(){const el=$('#hvCount');el.textContent=`已收：虱目魚 ${HV.caught.fish} 尾 · 草蝦 ${HV.caught.shrimp} 隻 · 上車 ${HV.trips*2} 籃`;}
+const SCOOP_POS=[0,-HV_SHORE-0.25],CRATE_POS=[2.6,-HV_SHORE-0.6],CARRY_WAIT=[3.4,-HV_SHORE-1.1],DROP=[5.85,-52.3],SORT_POS=[ST.x+0.3,-52.25],LOAD_WAIT=[4.2,-56.0],TRUCK_REAR=[-3.75,TRUCK_Z];
+/* 乾掉的池底（曬坪） */
+const dryTex=(()=>{const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');g.fillStyle='#b59a6e';g.fillRect(0,0,256,256);
+  for(let i=0;i<500;i++){g.fillStyle=`rgba(${150+Math.random()*50|0},${125+Math.random()*40|0},${85+Math.random()*30|0},.5)`;g.fillRect(Math.random()*256,Math.random()*256,3,3);}
+  g.strokeStyle='rgba(70,52,30,.85)';g.lineWidth=2;
+  for(let i=0;i<46;i++){let x=Math.random()*256,y=Math.random()*256;g.beginPath();g.moveTo(x,y);for(let k=0;k<5;k++){x+=rand(-28,28);y+=rand(-28,28);g.lineTo(x,y);}g.stroke();}
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(9,9);return t;})();
+const dryFloor=new THREE.Mesh(new THREE.PlaneGeometry(93,93).rotateX(-Math.PI/2),new THREE.MeshLambertMaterial({map:dryTex,transparent:true,opacity:0}));
+dryFloor.position.y=-1.49;dryFloor.visible=false;scene.add(dryFloor);
+/* 介面 */
+function hvLabel(){const g=HV.grade;
+  $('#hvCount').textContent=`分級：魚大 ${g.big}・中 ${g.mid}・小 ${g.small}・草蝦 ${g.shrimp} ｜ 過磅 ${Math.round(HV.kg).toLocaleString()} kg ｜ 上車 ${HV.loaded} ${HV.ship==='ice'?'箱':'簍'}`;}
 function hvCaption(t){$('#hvCap').textContent=t;}
-/* 開始 / 結束 */
+let hvShipSel='ice';
+document.querySelectorAll('#hvShip button').forEach(b=>b.onclick=()=>{hvShipSel=b.dataset.ship;document.querySelectorAll('#hvShip button').forEach(x=>x.classList.toggle('on',x===b));});
 function hvAsk(){if(HV.on){toast('正在收成中');return;}
   if(!fishes.length&&!shrimps.length){toast('池裡沒有魚蝦可以收成，先去「放養數量」放魚苗吧');return;}
-  $('#hvAskTxt').textContent=`池裡現在有虱目魚 ${fishes.length} 尾、草蝦 ${shrimps.length} 隻。`;openModal('hvConfirm');}
+  $('#hvAskTxt').textContent=`池裡現在有虱目魚 ${fishes.length} 尾（約實際 ${(fishes.length*FISH_REAL/10000).toFixed(1)} 萬尾）、草蝦 ${shrimps.length} 隻。`;openModal('hvConfirm');}
 function hvStart(){closeModal('hvConfirm');if(raftState.phase){toast('等竹筏餵完料再收成');return;}
   if(cctvOn)exitCCTV();
-  Object.assign(HV,{on:true,phase:'truck',t:0,netZ:44,k:0,jumpRate:0.01,speed:1,auto:true,caught:{fish:0,shrimp:0},trips:0,crateFill:0,hold:0,cyc:0.86,beepT:0,truckX:120,truckV:0,
-    before:{fish:fishes.length,shrimp:shrimps.length}});
-  const total=fishes.length+shrimps.length;HV.scoopN=Math.max(2,Math.ceil(total/14));HV.cap=Math.max(8,Math.ceil(total/5));
-  if(!TRUCK)TRUCK=buildTruck();TRUCK.g.visible=true;TRUCK.crates.forEach(c=>c.visible=false);placeTruck(HV.truckX);
-  HV.crew=[mkCrew(WORKERS[0],-50.2,44),mkCrew(WORKERS[1],50.2,44)];HV.crew[0].yaw=HV.crew[1].yaw=Math.PI/2;
-  netMesh.visible=netFloats.visible=netRope.visible=true;
+  const total=fishes.length+shrimps.length;
+  Object.assign(HV,{on:true,phase:'fast',t:0,netZ:HV_SHORE-2.6,k:0,jumpRate:0.003,speed:1,auto:true,ship:hvShipSel,S:44,caught:{fish:0,shrimp:0},grade:{big:0,mid:0,small:0,shrimp:0},kg:0,
+    crateFill:0,crateItems:[],hold:0,holdItems:[],queue:[],packAcc:0,packUnit:Math.max(3,Math.ceil(total/8)),boxesReady:0,loaded:0,cyc:0.86,beepT:0,truckX:120,truckGo:false,truckT:0,crew:[],
+    before:{fish:fishes.length,shrimp:shrimps.length},clamBefore:clams.count,nightBefore:night,sortT:0,scaleT:0});
+  HV.boxTotal=Math.ceil(total/HV.packUnit);
+  TRUCKS[HV.ship]=TRUCKS[HV.ship]||buildTruck(HV.ship);TRUCK=TRUCKS[HV.ship];TRUCK.g.visible=true;TRUCK.items.forEach(m=>m.visible=false);TRUCK.tanks.forEach(w=>w.visible=false);placeTruck(HV.truckX);
+  station=station||buildStation();station.g.visible=true;Object.values(station.baskets).forEach(b=>{b.n=0;b.pile.scale.y=0.001;});setScale(0);showStack();
+  drainPump=drainPump||buildDrainPump();
   follow=null;goal=null;setView(null);$('#info').classList.add('hide');
   $('#hvBar').classList.add('show');$('#hvFast').classList.remove('on');$('#hvFast').textContent='⏩ 加速';$('#hvCam').style.display='none';
-  hvCaption('收成日：冷藏貨車倒車開上堤岸，工人在北邊兩岸拉好魚網');hvLabel();
-  P.root.visible=false;
+  hvCaption('① 停料：收成前 24～48 小時停止餵食，讓魚蝦腸胃排空（時間快轉）');hvLabel();
   if(snd&&!HV.eng){try{const o=actx.createOscillator();o.type='sawtooth';o.frequency.value=55;const f=actx.createBiquadFilter();f.type='lowpass';f.frequency.value=220;const g=actx.createGain();g.gain.value=0;o.connect(f);f.connect(g);g.connect(snd.out);o.start();HV.eng={o,g};}catch(e){}}
   updateFeedButtons();}
 function hvFinish(){
-  [...HV.crew,HV.scooper,HV.carrier].forEach(c=>{if(c)scene.remove(c.P.root);});HV.crew=[];HV.scooper=HV.carrier=null;
+  HV.crew.forEach(c=>scene.remove(c.P.root));HV.crew=[];
   [shoreCrate,shorePile].forEach(o=>{if(o)scene.remove(o);});shoreCrate=shorePile=null;dipNet=null;
-  netMesh.visible=netFloats.visible=netRope.visible=false;TRUCK.g.visible=false;P.root.visible=true;
+  netMesh.visible=netFloats.visible=netRope.visible=false;TRUCK.g.visible=false;station.g.visible=false;drainPump.visible=false;dryFloor.visible=false;
+  aerators.forEach(a=>{if(a.x0!=null){a.x=a.x0;a.z=a.z0;a.g.position.x=a.x;a.g.position.z=a.z;}});aerCables.forEach(l=>l.visible=true);
+  P.root.visible=true;WATER=0;pond.position.y=0;pond.visible=true;night=HV.nightBefore;
   if(HV.eng){try{HV.eng.o.stop();}catch(e){}HV.eng=null;}
   HV.on=false;HV.phase=null;$('#hvBar').classList.remove('show');
-  $('#hvDoneTxt').innerHTML=`<div class="hvres"><b>${HV.caught.fish}</b><span>尾虱目魚</span></div><div class="hvres"><b>${HV.caught.shrimp}</b><span>隻草蝦</span></div><div class="hvres"><b>${HV.trips*2}</b><span>籃上車</span></div>`;
+  const g=HV.grade,fk=g.big*FISH_REAL*FISH_KG.big+g.mid*FISH_REAL*FISH_KG.mid+g.small*FISH_REAL*FISH_KG.small,sk=g.shrimp*SHRIMP_REAL*SHRIMP_KG;
+  const fmtT=kg=>kg>=1000?(kg/1000).toFixed(1)+' 公噸':Math.round(kg)+' 公斤';
+  $('#hvDoneTxt').innerHTML=`<div class="hvres"><b>${HV.caught.fish}</b><span>尾虱目魚</span></div><div class="hvres"><b>${HV.caught.shrimp}</b><span>隻草蝦</span></div><div class="hvres"><b>${HV.loaded}</b><span>${HV.ship==='ice'?'箱冰鮮':'簍活魚'}</span></div>`;
+  $('#hvDoneDetail').innerHTML=`<table class="hvtab"><tr><th>分級</th><th>畫面</th><th>換算實際</th><th>估計重量</th></tr>
+    <tr><td>虱目魚 大</td><td>${g.big}</td><td>${(g.big*FISH_REAL).toLocaleString()} 尾</td><td>${fmtT(g.big*FISH_REAL*FISH_KG.big)}</td></tr>
+    <tr><td>虱目魚 中</td><td>${g.mid}</td><td>${(g.mid*FISH_REAL).toLocaleString()} 尾</td><td>${fmtT(g.mid*FISH_REAL*FISH_KG.mid)}</td></tr>
+    <tr><td>虱目魚 小</td><td>${g.small}</td><td>${(g.small*FISH_REAL).toLocaleString()} 尾</td><td>${fmtT(g.small*FISH_REAL*FISH_KG.small)}</td></tr>
+    <tr><td>草蝦</td><td>${g.shrimp}</td><td>${(g.shrimp*SHRIMP_REAL).toLocaleString()} 隻</td><td>${fmtT(sk)}</td></tr>
+    <tr class="tot"><td>合計</td><td></td><td></td><td>${fmtT(fk+sk)}<br><small>約 ${Math.round((fk+sk)/0.6).toLocaleString()} 台斤</small></td></tr></table>
+    <div class="tip">出貨方式：${HV.ship==='ice'?'冰鮮（碎冰保麗龍箱，送魚市場）':'活魚（活魚車全程打氣，送餐廳、活魚商）'}・文蛤另以耙子採收（${HV.clamBefore} 顆）・池子已曬坪 7 天並重新進水。</div>
+    <div class="tip">重量是依畫面換算的估計值：1 尾畫面虱目魚 ≈ 實際 ${FISH_REAL} 尾（大 0.6、中 0.45、小 0.3 公斤），1 隻畫面草蝦 ≈ ${SHRIMP_REAL} 隻（約 35 公克）。</div>`;
   openModal('hvDone');updateFeedButtons();follow=null;setGoal(new V3(0,0,0),125,0.75,0.95);setView('all');}
 function hvRestock(){closeModal('hvDone');const b=HV.before||{fish:72,shrimp:42};
-  for(let i=0;i<b.fish;i++)addFish(0.35);for(let i=0;i<b.shrimp;i++)addShrimp(0.4);
-  toast(`放了 ${b.fish} 尾虱目魚苗、${b.shrimp} 隻蝦苗，會慢慢長大`);}
+  for(let i=0;i<b.fish;i++)addFish(0.35);for(let i=0;i<b.shrimp;i++)addShrimp(0.4);clams.count=HV.clamBefore||700;
+  toast(`放了 ${b.fish} 尾虱目魚苗、${b.shrimp} 隻蝦苗和文蛤苗，會慢慢長大`);}
 $('#bHarvest').onclick=hvAsk;$('#hvGo').onclick=hvStart;$('#hvNo').onclick=()=>closeModal('hvConfirm');
 $('#hvRestock').onclick=hvRestock;$('#hvLater').onclick=()=>{closeModal('hvDone');toast('池子空了，隨時可以從「⋯ 更多 → 放養數量」放魚苗');};
 $('#hvFast').onclick=()=>{HV.speed=HV.speed>1?1:3;$('#hvFast').classList.toggle('on',HV.speed>1);$('#hvFast').textContent=HV.speed>1?'⏩ 加速中 ×3':'⏩ 加速';};
 $('#hvCam').onclick=()=>{HV.auto=true;$('#hvCam').style.display='none';follow=null;goal=null;};
 canvas.addEventListener('pointerdown',()=>{if(HV.on&&HV.auto){HV.auto=false;$('#hvCam').style.display='inline-block';}});
 /* 撈一網 */
-function hvCatch(){const tip=_np.set(0,0,-47.3);const all=[...fishes.map(f=>({f,d:f.pos.distanceToSquared(tip),fish:true})),...shrimps.map(s=>({s,d:(s.pos.x-tip.x)**2+(s.pos.z-tip.z)**2,fish:false}))].sort((a,b)=>a.d-b.d).slice(0,HV.scoopN);
-  for(const c of all){if(c.fish){const i=fishes.indexOf(c.f);if(i>=0){fishes.splice(i,1);scene.remove(c.f.g);if(follow===c.f.g)follow=null;HV.caught.fish++;}}
-    else{const i=shrimps.indexOf(c.s);if(i>=0){shrimps.splice(i,1);scene.remove(c.s.m);if(follow===c.s.m)follow=null;HV.caught.shrimp++;}}}
-  HV.hold=all.length;dipNet.fishIn.forEach((m,i)=>m.visible=i<Math.min(3,HV.hold));
-  splashRing(0,-47.3,16,0.9);sndSplash(0,-47.3,true);ripple(0,-47.3,0.6);hvLabel();}
+function hvCatch(){const tip=_np2.set(0,0,-HV_SHORE+2.3);
+  const all=[...fishes.map(f=>({f,d:(f.pos.x-tip.x)**2+(f.pos.z-tip.z)**2,fish:true})),...shrimps.map(s=>({s,d:(s.pos.x-tip.x)**2+(s.pos.z-tip.z)**2,fish:false}))].sort((a,b)=>a.d-b.d).slice(0,HV.scoopN);
+  const items=[];
+  for(const c of all){if(c.fish){const i=fishes.indexOf(c.f);if(i>=0){fishes.splice(i,1);scene.remove(c.f.g);if(follow===c.f.g)follow=null;HV.caught.fish++;items.push({fish:true,s:c.f.s0*Math.min(1,c.f.grow||1)});}}
+    else{const i=shrimps.indexOf(c.s);if(i>=0){shrimps.splice(i,1);scene.remove(c.s.m);if(follow===c.s.m)follow=null;HV.caught.shrimp++;items.push({fish:false});}}}
+  HV.hold=items.length;HV.holdItems=items;dipNet.fishIn.forEach((m,i)=>m.visible=i<Math.min(3,HV.hold));
+  splashRing(0,tip.z,16,0.9);sndSplash(0,tip.z,true);ripple(0,tip.z,0.6);}
+function gradeOf(it){if(!it.fish)return 'shrimp';return it.s>=0.97?'big':it.s>=0.88?'mid':'small';}
 /* 每格更新 */
 function updateHarvest(dt0){if(!HV.on)return;const dt=dt0*HV.speed;HV.t+=dt;const ph=HV.phase;
-  // 貨車
+  HV.S=shoreAt(WATER)-0.8;
+  // 貨車：降水位時就倒車進場
   let tv=0;
-  if(ph==='truck'){const k=clamp(HV.t/12,0,1),x=120*(1-smooth(0,1,k));tv=(HV.truckX-x)/Math.max(dt,1e-4);HV.truckX=x;
-    HV.beepT-=dt;if(HV.beepT<0&&k<1){HV.beepT=0.75;tone(0.09*att(x,1,TRUCK_Z,30),1050,1050,0.28,'square');}
-    if(HV.t>=12.5){HV.phase='drag';HV.t=0;HV.jumpRate=0.03;hvCaption('兩岸的工人拉著魚網往南走，把魚蝦慢慢趕到池子南邊');}}
-  else if(ph==='leave'){const x=HV.truckX+Math.min(14,HV.t*3)*dt;tv=x-HV.truckX;tv/=Math.max(dt,1e-4);HV.truckX=x;
-    if(HV.truckX>140){hvFinish();return;}}
-  placeTruck(HV.truckX);TRUCK.wheels.forEach(w=>w.rotation.z-=tv*dt/0.42);
-  if(HV.eng){const a=att(HV.truckX,1,TRUCK_Z,30);HV.eng.g.gain.setTargetAtTime((0.03+Math.min(0.12,Math.abs(tv)*0.012))*a,actx.currentTime,0.2);HV.eng.o.frequency.setTargetAtTime(50+Math.abs(tv)*3,actx.currentTime,0.3);}
-  const [cL,cR]=HV.crew;
-  const pull={tz:0.25,shR:1.05,elR:0.45,abR:0.1,shL:1.05,elL:0.45,abL:-0.1};
-  if(ph==='truck'){cL.pos.set(-50.2,0,netZAt(-49.6));cR.pos.set(50.2,0,netZAt(49.6));}
-  else if(ph==='drag'){const k=clamp(HV.t/32,0,1);HV.netZ=lerp(44,-42,k);
-    walkTo(cL,-50.2,HV.netZ,99,dt);walkTo(cR,50.2,HV.netZ,99,dt);cL.moving=cR.moving=k<1;cL.wp+=dt*4;cR.wp+=dt*4;face(cL,Math.PI/2,dt);face(cR,Math.PI/2,dt);
-    if(k>=1){HV.phase='close';HV.t=0;HV.jumpRate=0.12;HV.crew.forEach(c=>c.leg=0);
-      HV.scooper=mkCrew(Object.assign({},CHARS[charIdx]),TRUCK_REAR.x,TRUCK_REAR.z);HV.carrier=mkCrew(WORKERS[2],TRUCK_REAR.x-0.8,TRUCK_REAR.z);
-      dipNet=buildDipNet(HV.scooper.P.root);
-      shoreCrate=new THREE.Mesh(TRUCK.crateGeo,vcMat());shoreCrate.position.set(CRATE_POS.x,terrainH(CRATE_POS.x,CRATE_POS.z)+0.17,CRATE_POS.z);scene.add(shoreCrate);
-      shorePile=new THREE.Mesh(new THREE.SphereGeometry(1,12,8),vcMat());shorePile.geometry=merge([part(new THREE.SphereGeometry(1,12,8),0xd7dde0)]);shorePile.scale.set(0.27,0.001,0.19);shorePile.position.copy(shoreCrate.position).y+=0.15;scene.add(shorePile);
-      carryCrate=new THREE.Mesh(TRUCK.crateGeo,vcMat());carryCrate.position.set(0.42,0.95,0);carryCrate.visible=false;HV.carrier.P.root.add(carryCrate);
-      hvCaption('收網！兩邊的人沿著池岸跑向中間，把魚網圍成一個網袋');}}
-  else if(ph==='close'){
-    for(const [c,s] of [[cL,-1],[cR,1]]){if(c.leg===0){if(walkTo(c,50.2*s,-49.8,3.8,dt))c.leg=1;}else walkTo(c,HV.R*s,-49.9,3.8,dt);}
-HV.k=clamp(1-(Math.abs(cL.pos.x)-HV.R)/(50.2-HV.R),0,1)*0.85+(cL.leg?0.15:clamp((-42-cL.pos.z)/7.8,0,1)*0.15);
-    walkTo(HV.scooper,SCOOP_POS.x,SCOOP_POS.z,1.6,dt);walkTo(HV.carrier,CARRY_WAIT.x,CARRY_WAIT.z,1.6,dt);
-    if(!cL.moving&&!cR.moving&&!HV.scooper.moving){HV.k=1;HV.phase='scoop';HV.t=0;HV.jumpRate=0.3;hvCaption(`${CHARS[charIdx].name}用撈網一網一網把魚蝦撈進籃子，搬運工扛上貨車`);}}
-  else if(ph==='scoop'){const left=fishes.length+shrimps.length;
-    face(HV.scooper,-Math.PI/2,dt);
-    // 撈網動作
+  if(HV.truckGo){HV.truckT=(HV.truckT||0)+dt;const k=clamp(HV.truckT/11,0,1),x=120*(1-smooth(0,1,k));tv=(HV.truckX-x)/Math.max(dt,1e-4);HV.truckX=x;if(k>=1){HV.truckGo=false;HV.truckX=0;}
+    HV.beepT-=dt;if(HV.beepT<0&&k<1){HV.beepT=0.75;tone(0.09*att(x,1,TRUCK_Z,30),1050,1050,0.28,'square');}}
+  if(ph==='leave'){const x=HV.truckX+Math.min(14,HV.t*3)*dt;tv=-(x-HV.truckX)/Math.max(dt,1e-4);HV.truckX=x;}
+  if(TRUCK.g.visible){placeTruck(HV.truckX);TRUCK.wheels.forEach(w=>w.rotation.z+=tv*dt/0.42);}
+  if(HV.eng){const a=att(HV.truckX,1,TRUCK_Z,30);HV.eng.g.gain.setTargetAtTime(TRUCK.g.visible?(0.03+Math.min(0.12,Math.abs(tv)*0.012))*a:0,actx.currentTime,0.2);HV.eng.o.frequency.setTargetAtTime(50+Math.abs(tv)*3,actx.currentTime,0.3);}
+  if(TRUCK.type==='live'&&HV.loaded>0&&TRUCK.g.visible&&Math.random()<dt0*30){TRUCK.g.updateMatrixWorld();const t=TRUCK.tanks[Math.random()<0.5?0:1];t.getWorldPosition(_np2);
+    splash.spawn(_np2.x+rand(-0.8,0.8),_np2.y+0.02,_np2.z+rand(-0.7,0.7),rand(-0.1,0.1),rand(0.3,0.8),rand(-0.1,0.1),0.4);}
+  // ① 停料（時間快轉兩天）
+  if(ph==='fast'){night=(HV.t%3.6)>1.8;if(HV.t>=7.2){night=HV.nightBefore;HV.phase='drain';HV.t=0;HV.truckGo=true;drainPump.visible=true;
+      mkCrew(WORKERS[0],-12,53.5,'L');mkCrew(WORKERS[1],12,53.5,'R');mkCrew(WORKERS[2],-5,54,'M1');mkCrew(WORKERS[3],5,54,'M2');
+      aerators.forEach(a=>{a.x0=a.x;a.z0=a.z;});aerCables.forEach(l=>l.visible=false);
+      hvCaption('② 降水位：抽水機把池水抽到剩膝蓋到大腿深，縮小魚群活動範圍；水車拉到北岸、收購貨車同時倒車進場');}}
+  // ② 降水位
+  else if(ph==='drain'){WATER=lerp(0,HV_W,smooth(0,1,HV.t/10));netMesh.visible=netFloats.visible=netRope.visible=HV.t>7.5;
+    const ak=smooth(0,1,HV.t/8);aerators.forEach((a,i)=>{a.x=lerp(a.x0,AER_PARK[i][0],ak);a.z=lerp(a.z0,AER_PARK[i][1],ak);a.g.position.x=a.x;a.g.position.z=a.z;});
+    if(Math.random()<dt0*60)splash.spawn(59.8,0.9,8+rand(-0.1,0.1),rand(1.5,2.5),rand(-0.2,0.4),rand(-0.2,0.2),1.2);
+    const S=HV_SHORE-0.3;walkTo(HV.crew[0],-S,HV_SHORE-2.6,1.6,dt);walkTo(HV.crew[1],S,HV_SHORE-2.6,1.6,dt);
+    netPoint(1/3,_np);walkTo(HV.crew[2],_np.x,_np.z,1.6,dt);netPoint(2/3,_np);walkTo(HV.crew[3],_np.x,_np.z,1.6,dt);
+    if(HV.t>=10&&HV.truckX<=0.01){HV.phase='drag';HV.t=0;HV.jumpRate=0.03;drainPump.visible=false;
+      hvCaption('③ 圍網：穿青蛙裝的工人在水裡拉著圍網，從北邊慢慢把魚蝦趕往南邊的集魚區');}}
+  // ③ 拉網
+  else if(ph==='drag'){const k=clamp(HV.t/30,0,1);HV.netZ=lerp(HV_SHORE-1.3,-40,k);const S=HV_SHORE-0.3;
+    HV.crew[0].pos.set(-S,0,netZAt(-S));HV.crew[1].pos.set(S,0,netZAt(S));
+    netPoint(1/3,_np);HV.crew[2].pos.copy(_np);netPoint(2/3,_np);HV.crew[3].pos.copy(_np);
+    HV.crew.slice(0,4).forEach(c=>{c.moving=k<1;c.wp+=dt*3.5;face(c,SOUTH,dt);});
+    if(k>=1){HV.phase='close';HV.t=0;HV.jumpRate=0.12;HV.crew[0].leg=HV.crew[1].leg=0;
+      const sc=mkCrew(Object.assign({},CHARS[charIdx]),TRUCK_REAR[0],-56,'scoop');const ca=mkCrew(WORKERS[4],TRUCK_REAR[0]-0.6,-56.2,'carry');
+      mkCrew(WORKERS[5],ST.x+0.3,-56,'sort');mkCrew(WORKERS[6],LOAD_WAIT[0],-56.6,'load');
+      dipNet=buildDipNet(sc.P.root);
+      shoreCrate=new THREE.Mesh(CRATE_GEO,vcMat());shoreCrate.position.set(CRATE_POS[0],terrainH(CRATE_POS[0],CRATE_POS[1])+0.17,CRATE_POS[1]);scene.add(shoreCrate);
+      shorePile=new THREE.Mesh(new THREE.SphereGeometry(1,12,8),new THREE.MeshPhongMaterial({color:0xd7dde0,shininess:90}));shorePile.scale.set(0.27,0.001,0.19);shorePile.position.copy(shoreCrate.position).y+=0.15;scene.add(shorePile);
+      carryCrate=new THREE.Mesh(CRATE_GEO,vcMat());carryCrate.position.set(0.42,0.95,0);carryCrate.visible=false;ca.P.root.add(carryCrate);
+      loadBox=new THREE.Group();{const bg=HV.ship==='ice'?BOX_ICE:BOX_LIVE;const b1=new THREE.Mesh(bg,vcMat()),b2=new THREE.Mesh(bg,vcMat());b2.position.y=0.37;loadBox.add(b1,b2);loadBox.userData.b2=b2;}loadBox.position.set(0.42,0.98,0);loadBox.visible=false;HV.crew[7].P.root.add(loadBox);
+      hvCaption('④ 收網：兩岸的人沿池邊往中間收，把圍網圍成集魚網袋，魚群在裡面翻騰');}}
+  // ④ 收網
+  else if(ph==='close'){const [cL,cR]=HV.crew,S=HV_SHORE-0.3,y=-HV_SHORE+0.3;
+    for(const [c,s] of [[cL,-1],[cR,1]]){if(c.leg===0){if(walkTo(c,S*s,y,3.8,dt))c.leg=1;}else walkTo(c,HV.R*s,y,3.8,dt);}
+    HV.k=clamp(1-(Math.abs(cL.pos.x)-HV.R)/(S-HV.R),0,1)*0.85+(cL.leg?0.15:clamp((-40-cL.pos.z)/(S-40),0,1)*0.15);
+    netPoint(1/3,_np);walkTo(HV.crew[2],_np.x,_np.z,3.5,dt);netPoint(2/3,_np);walkTo(HV.crew[3],_np.x,_np.z,3.5,dt);
+    const sc=HV.crew[4],ca=HV.crew[5],so=HV.crew[6],lo=HV.crew[7];
+    walkTo(sc,SCOOP_POS[0],SCOOP_POS[1],1.8,dt);walkTo(ca,CARRY_WAIT[0],CARRY_WAIT[1],1.8,dt);walkTo(so,SORT_POS[0],SORT_POS[1],1.5,dt);walkTo(lo,LOAD_WAIT[0],LOAD_WAIT[1],1.5,dt);
+    if(!cL.moving&&!cR.moving&&!sc.moving){HV.k=1;HV.phase='scoop';HV.t=0;HV.jumpRate=0.3;HV.scoopN=Math.max(2,Math.ceil((fishes.length+shrimps.length)/14));
+      hvCaption(`⑤ 撈捕＋分級過磅：${CHARS[charIdx].name}一網網撈起，岸上挑雜物、分大中小過磅記錄，`+(HV.ship==='ice'?'再倒進鋪滿碎冰的保麗龍箱冰鎮':'再倒進活魚車的打氣水槽'));}}
+  // ⑤ 撈捕、分級、過磅、裝箱、上車
+  else if(ph==='scoop'){const left=fishes.length+shrimps.length,sc=HV.crew[4],ca=HV.crew[5],so=HV.crew[6],lo=HV.crew[7];
+    face(sc,NORTH,dt);
     const prev=HV.cyc;if(left>0||HV.hold>0||HV.cyc<0.86)HV.cyc=(HV.cyc+dt/2.4)%1;const c=HV.cyc;
     let z=0.45,y=0;
-    if(c<0.3)z=lerp(0.45,-0.58,smooth(0,0.3,c));else if(c<0.42)z=-0.58+Math.sin(c*60)*0.04;else if(c<0.58)z=lerp(-0.58,0.5,smooth(0.42,0.58,c));
+    if(c<0.3)z=lerp(0.45,-0.42,smooth(0,0.3,c));else if(c<0.42)z=-0.42+Math.sin(c*60)*0.04;else if(c<0.58)z=lerp(-0.42,0.5,smooth(0.42,0.58,c));
     else if(c<0.78){z=0.5;y=lerp(0,1.35,smooth(0.58,0.78,c));}else if(c<0.86){y=1.35;z=lerp(0.5,0.05,smooth(0.78,0.86,c));}else{y=lerp(1.35,0,smooth(0.86,1,c));z=lerp(0.05,0.45,smooth(0.86,1,c));}
     dipNet.pv.rotation.set(0,y,z);dipNet.hg.rotation.z=-z;
-    if(prev<0.3&&c>=0.3&&left>0)splashRing(0,-47.3,8,0.6);
+    if(prev<0.3&&c>=0.3&&left>0)splashRing(0,-HV_SHORE+2.3,8,0.6);
     if(prev<0.45&&c>=0.45&&left>0)hvCatch();
-    if(prev<0.82&&c>=0.82&&HV.hold>0){HV.crateFill+=HV.hold;HV.hold=0;dipNet.fishIn.forEach(m=>m.visible=false);tone(0.06*att(2.6,0,-50,15),300,180,0.12,'triangle');}
-    HV.scooper.arms={tz:-0.25-Math.min(0,z)*0.4,ty:y*0.55,shR:0.9-z*0.7,elR:0.55,abR:-0.05,shL:0.75-z*0.7,elL:0.75,abL:0.15};
-    shorePile.scale.y=Math.max(0.001,Math.min(1,HV.crateFill/HV.cap))*0.08;
-    // 搬運工
-    const cr=HV.carrier;
-    if(cr.state==='wait'){face(cr,Math.atan2(-(CRATE_POS.z-cr.pos.z),CRATE_POS.x-cr.pos.x),dt);
-      if(HV.crateFill>=HV.cap||(left===0&&HV.hold===0&&HV.crateFill>0&&HV.cyc>=0.86)){cr.load=HV.crateFill;HV.crateFill=0;carryCrate.visible=true;cr.state='go';}}
-    else if(cr.state==='go'){if(walkTo(cr,TRUCK_REAR.x,TRUCK_REAR.z,2.2,dt)){HV.trips++;TRUCK.crates.forEach((m,i)=>m.visible=i<Math.min(12,HV.trips*2));carryCrate.visible=false;cr.state='back';hvLabel();tone(0.06*att(TRUCK_REAR.x,1,TRUCK_REAR.z,20),160,120,0.15,'triangle');}}
-    else if(cr.state==='back'){if(walkTo(cr,CARRY_WAIT.x,CARRY_WAIT.z,2.2,dt))cr.state='wait';}
-    cr.arms=carryCrate.visible?{shR:0.75,elR:1.25,shL:0.75,elL:1.25,abR:0.1,abL:-0.1}:null;
-    if(left===0&&HV.hold===0&&HV.crateFill===0&&cr.state==='wait'&&HV.cyc>=0.86){
-      HV.phase='leave';HV.t=0;HV.jumpRate=0;hvCaption('滿載出發！貨車把漁獲送往魚市場');
+    if(prev<0.82&&c>=0.82&&HV.hold>0){HV.crateFill+=HV.hold;HV.crateItems.push(...HV.holdItems);HV.hold=0;HV.holdItems=[];dipNet.fishIn.forEach(m=>m.visible=false);tone(0.06*att(CRATE_POS[0],0,CRATE_POS[1],15),300,180,0.12,'triangle');}
+    sc.arms={tz:-0.25-Math.min(0,z)*0.4,ty:y*0.55,shR:0.9-z*0.7,elR:0.55,abR:-0.05,shL:0.75-z*0.7,elL:0.75,abL:0.15};
+    shorePile.scale.y=Math.max(0.001,Math.min(1,HV.crateFill/12))*0.08;
+    const cap=Math.max(6,Math.ceil(HV.scoopN*2));
+    // 搬運：岸邊簍筐 → 分級台
+    if(ca.state==='wait'){face(ca,Math.atan2(-(CRATE_POS[1]-ca.pos.z),CRATE_POS[0]-ca.pos.x),dt);
+      if(HV.crateFill>=cap||(left===0&&HV.hold===0&&HV.crateFill>0&&HV.cyc>=0.86)){ca.load=HV.crateItems;HV.crateItems=[];HV.crateFill=0;carryCrate.visible=true;ca.state='go';}}
+    else if(ca.state==='go'){if(walkPath(ca,[[DROP[0],DROP[1]]],2.0,dt)){HV.queue.push(...ca.load);ca.load=null;carryCrate.visible=false;ca.state='back';}}
+    else if(ca.state==='back'){if(walkTo(ca,CARRY_WAIT[0],CARRY_WAIT[1],2.0,dt))ca.state='wait';}
+    ca.arms=carryCrate.visible?{shR:0.75,elR:1.25,shL:0.75,elL:1.25,abR:0.1,abL:-0.1}:null;
+    // 分級＋過磅
+    face(so,SOUTH,dt);
+    if(HV.queue.length){HV.sortT-=dt;const sw=Math.sin(T*9);so.arms={tz:-0.35,ty:sw*0.35,shR:0.9+sw*0.35,elR:0.7,shL:0.9-sw*0.35,elL:0.7,abR:-0.2,abL:0.2};
+      if(HV.sortT<=0){HV.sortT=0.22;const it=HV.queue.shift(),gk=gradeOf(it);HV.grade[gk]++;
+        HV.kg+=gk==='shrimp'?SHRIMP_REAL*SHRIMP_KG:FISH_REAL*FISH_KG[gk];
+        const b=station.baskets[gk];b.n++;b.pile.scale.y=Math.min(0.09,0.012+b.n*0.004);
+        HV.packAcc++;if(HV.packAcc>=HV.packUnit){HV.packAcc=0;HV.boxesReady++;showStack();}
+        if(Math.random()<0.4)tone(0.03*att(ST.x,1,ST.z,14),900,700,0.05,'triangle');hvLabel();}}
+    else{so.arms={tz:-0.15,shR:0.35,elR:0.6,shL:0.35,elL:0.6};
+      if(left===0&&HV.hold===0&&HV.crateFill===0&&ca.state==='wait'&&HV.packAcc>0){HV.packAcc=0;HV.boxesReady++;showStack();}}
+    HV.scaleT-=dt0;if(HV.scaleT<0){HV.scaleT=0.2;setScale(HV.kg);}
+    // 上車
+    if(lo.state==='wait'){face(lo,SOUTH,dt);const allIn=fishes.length+shrimps.length+HV.hold+HV.crateFill+HV.queue.length+HV.packAcc===0;
+      if(HV.boxesReady>=2||(HV.boxesReady>0&&allIn)){lo.n=Math.min(2,HV.boxesReady);HV.boxesReady-=lo.n;showStack();loadBox.visible=true;loadBox.userData.b2.visible=lo.n>1;lo.state='go';}}
+    else if(lo.state==='go'){if(walkPath(lo,[[LOAD_WAIT[0],-56.1],[-2.6,-56.1],[TRUCK_REAR[0],TRUCK_REAR[1]]],2.6,dt)){HV.loaded+=lo.n;showLoad();loadBox.visible=false;lo.state='back';hvLabel();
+        if(HV.ship==='live')for(let q=0;q<10;q++)splash.spawn(TRUCK_REAR[0]+1.2,2.0,TRUCK_Z+rand(-0.4,0.4),rand(0.2,0.8),rand(0.5,1.2),rand(-0.3,0.3),0.6);tone(0.06*att(TRUCK_REAR[0],1,TRUCK_REAR[1],20),160,120,0.15,'triangle');}}
+    else if(lo.state==='back'){if(walkPath(lo,[[-2.6,-56.1],[LOAD_WAIT[0],-56.1],[LOAD_WAIT[0],LOAD_WAIT[1]]],2.6,dt))lo.state='wait';}
+    lo.arms=loadBox.visible?{shR:0.75,elR:1.25,shL:0.75,elL:1.25,abR:0.1,abL:-0.1}:null;
+    if(left===0&&HV.hold===0&&HV.crateFill===0&&ca.state==='wait'&&!HV.queue.length&&HV.packAcc===0&&HV.boxesReady===0&&lo.state==='wait'&&HV.cyc>=0.86){
+      HV.phase='leave';HV.t=0;HV.jumpRate=0;hvCaption(HV.ship==='ice'?'⑥ 快速發車：冰鮮漁獲趕往魚市場':'⑥ 快速發車：活魚車一路打氣，送往餐廳與活魚商');
       const a=att(HV.truckX,1,TRUCK_Z,30);tone(0.14*a,420,410,0.25,'square');tone(0.14*a,420,410,0.35,'square',0.35);}}
+  // ⑥ 發車
+  else if(ph==='leave'){if(HV.truckX>140){TRUCK.g.visible=false;HV.phase='dry';HV.t=0;HV.clamBefore=clams.count;
+      netMesh.visible=netFloats.visible=netRope.visible=false;drainPump.visible=true;
+      HV.crew.forEach(c=>scene.remove(c.P.root));HV.crew=[];[shoreCrate,shorePile].forEach(o=>{if(o)scene.remove(o);});shoreCrate=shorePile=null;station.g.visible=false;
+      hvCaption('⑦ 抽乾曬坪：殘水抽乾，文蛤另外用耙子採收，池底曝曬陽光殺菌、分解有機質');}}
+  // ⑦ 抽乾、曬坪（時間快轉 7 天）
+  else if(ph==='dry'){WATER=lerp(HV_W,BOTTOM-0.08,smooth(0,3,HV.t));if(HV.t>1.5)clams.count=0;
+    if(HV.t<3&&Math.random()<dt0*60)splash.spawn(59.8,0.9,8+rand(-0.1,0.1),rand(1.5,2.5),rand(-0.2,0.4),rand(-0.2,0.2),1.2);
+    if(HV.t>3){drainPump.visible=false;dryFloor.visible=true;dryFloor.material.opacity=smooth(3,10,HV.t);const day=Math.min(7,1+Math.floor((HV.t-3)/(11/7)));
+      night=((HV.t-3)%(11/7))>(11/14);hvCaption(`⑦ 曬坪第 ${day} 天：陽光紫外線殺菌，分解底泥中的有機質與硫化氫`);}
+    if(HV.t>=14){night=HV.nightBefore;HV.phase='refill';HV.t=0;hvCaption('⑧ 重新進水：引入海水與淡水，準備放下一批魚苗');}}
+  // ⑧ 進水
+  else if(ph==='refill'){WATER=lerp(BOTTOM-0.08,0,smooth(0,9,HV.t));dryFloor.material.opacity=1-smooth(0,2,HV.t);if(HV.t>2)dryFloor.visible=false;
+    if(Math.random()<dt0*50)splash.spawn(-49.25,0.95+rand(-0.08,0.08),-18+rand(-0.08,0.08),rand(1.6,2.3),rand(-0.1,0.4),rand(-0.15,0.15),2);
+    if(Math.random()<dt0*50)splash.spawn(rand(-3.3,3.3),0.12,54.6,rand(-0.3,0.3),rand(0.4,1.4),-rand(2.5,4.5),1);
+    if(HV.t>=9.5){hvFinish();return;}}
+  pond.position.y=WATER;pond.visible=WATER>BOTTOM+0.02;
   // 工人姿勢
-  for(const c of HV.crew){const isPull=ph==='truck'||ph==='drag'||ph==='close';applyPose(c.P,wpose(c.wp,c.moving,isPull?pull:{shR:0.2,elR:0.3,shL:0.2,elL:0.3}),Math.min(1,dt0*10));placeCrew(c);
-    if(!c.moving&&(ph==='scoop'||ph==='leave'))face(c,Math.PI/2,dt);}
-  for(const c of [HV.scooper,HV.carrier]){if(!c)continue;applyPose(c.P,wpose(c.wp,c.moving,c.arms),Math.min(1,dt0*10));placeCrew(c);}
-  updateNet();
+  const pull={tz:0.25,shR:1.05,elR:0.45,abR:0.1,shL:1.05,elL:0.45,abL:-0.1},hold={tz:-0.45,shR:1.2,elR:0.2,shL:1.2,elL:0.2,abR:-0.1,abL:0.1};
+  HV.crew.forEach((c,i)=>{const netPh=ph==='drain'||ph==='drag'||ph==='close';let arms=c.arms;
+    if(i<2&&netPh)arms=pull;else if(i<4&&netPh)arms=hold;else if(i<4)arms={shR:0.2,elR:0.3,shL:0.2,elL:0.3};
+    applyPose(c.P,wpose(c.wp,c.moving,arms),Math.min(1,dt0*10));placeCrew(c);
+    if(i<4&&!c.moving&&(ph==='scoop'||ph==='leave'))face(c,SOUTH,dt);});
+  if(netMesh.visible)updateNet();
   // 自動運鏡
   if(HV.auto&&!cctvOn&&!saver){let tg,r,th,phi;
-    if(ph==='truck'){tg=_np.set(HV.truckX*0.85,1.2,TRUCK_Z+3);r=30;th=0.75;phi=0.98;}
-    else if(ph==='drag'){tg=_np.set(0,0,HV.netZ-8);r=62;th=0.25;phi=0.92;}
-    else if(ph==='close'){tg=_np.set(0,0,-44);r=36;th=0.18;phi=0.95;}
-    else if(ph==='scoop'){tg=_np.set(0.3,0.6,-51);r=15;th=0.6;phi=1.12;}
-    else{tg=_np.set(HV.truckX,1.2,TRUCK_Z);r=24;th=0.5;phi=1.0;}
+    if(ph==='fast'){tg=_np.set(0,0,0);r=110;th=0.75;phi=0.9;}
+    else if(ph==='drain'){tg=_np.set(lerp(HV.truckX,25,0.5),0,lerp(TRUCK_Z,0,0.5));r=75;th=0.9;phi=0.9;}
+    else if(ph==='drag'){tg=_np.set(0,WATER,HV.netZ-8);r=58;th=0.25;phi=0.92;}
+    else if(ph==='close'){tg=_np.set(0,WATER,-43);r=34;th=0.18;phi=0.95;}
+    else if(ph==='scoop'){tg=_np.set(3,0.3,-51.5);r=17;th=0.55;phi=1.1;}
+    else if(ph==='leave'){tg=_np.set(HV.truckX,1.2,TRUCK_Z);r=24;th=0.5;phi=1.0;}
+    else{tg=_np.set(0,-1,0);r=105;th=0.6;phi=0.85;}
     const k=1-Math.exp(-dt0*1.5);cam.target.lerp(tg,k);cam.r=lerp(cam.r,r,k);cam.theta=angLerp(cam.theta,th,k);cam.phi=lerp(cam.phi,phi,k);}
 }
-addLabel('🚚 收購貨車',()=>HV.on&&TRUCK?new V3(HV.truckX,4.2,TRUCK_Z):null);
-
-function hvNear(p){if(!HV.on)return false;for(const c of [...HV.crew,HV.scooper,HV.carrier]){if(c&&Math.hypot(c.pos.x-p.x,c.pos.z-p.z)<7)return true;}return false;}
+function hvNear(p){if(!HV.on)return false;for(const c of HV.crew){if(Math.hypot(c.pos.x-p.x,c.pos.z-p.z)<7)return true;}return false;}
+addLabel('🚚 收購貨車',()=>HV.on&&TRUCK&&TRUCK.g.visible?new V3(HV.truckX,4.2,TRUCK_Z):null);
+addLabel('⚖️ 分級過磅',()=>HV.on&&station&&station.g.visible?new V3(ST.x,3.2,ST.z):null);
 /* ---------- 模擬 ---------- */
 let S=18,DO=6.2,simAcc=0;
 function flowAt(x,z,out){
@@ -1887,20 +2054,20 @@ function animate(){
   // 水車
   for(const a of aerators){
     for(const w of a.wheels)w.rotation.x+=aerF*9*dt;
-    a.g.position.y=0.03*Math.sin(T*3+a.i);
+    a.g.position.y=Math.max(WATER,terrainH(a.x,a.z)+0.3)+0.03*Math.sin(T*3+a.i);
     if(aerF>0.3){
       const c=Math.cos(a.g.rotation.y),s=Math.sin(a.g.rotation.y);
       // 葉輪從水裡往上翻起，把水甩向上方和後方
       a.acc=(a.acc||0)+dt*aerF*(quality==='high'?460:240);const n=Math.min(40,Math.floor(a.acc)),w=9*aerF*0.56;a.acc-=n;
       for(let k=0;k<n;k++){const lx=(Math.random()<0.5?1:-1)*rand(0.82,1.18);
         const an=Math.random()<0.8?rand(-0.45,0.55):rand(0.55,1.1);
-        const lz=-0.56*Math.cos(an),ly=Math.max(0.03,0.3+0.56*Math.sin(an));
+        const lz=-0.56*Math.cos(an),ly=WATER+Math.max(0.03,0.3+0.56*Math.sin(an));
         const tg=w*rand(0.75,1.1),rd=rand(0.6,1.8);
         const vzL=tg*Math.sin(an)-rd*Math.cos(an),vy=tg*Math.cos(an)+rd*Math.sin(an),vx=rand(-0.35,0.35);
         splash.spawn(a.x+lx*c+lz*s,ly,a.z-lx*s+lz*c,vx*c+vzL*s,vy,-vx*s+vzL*c,1.6);}
       // 貼近水面往後噴的細水花
       if(Math.random()<aerF)for(let k=0;k<2;k++){const lx=(Math.random()<0.5?1:-1)*rand(0.82,1.18),vz=-rand(2,3.6),vx=rand(-0.4,0.4);
-        splash.spawn(a.x+lx*c-0.5*s,0.05,a.z-lx*s-0.5*c,vx*c+vz*s,rand(0.8,1.8),-vx*s+vz*c,1);}
+        splash.spawn(a.x+lx*c-0.5*s,WATER+0.05,a.z-lx*s-0.5*c,vx*c+vz*s,rand(0.8,1.8),-vx*s+vz*c,1);}
       if(Math.random()<dt*8*aerF){const lx=rand(-1.4,1.4),lz=-rand(1,2);foam.spawn(a.x+lx*c+lz*s,0.06,a.z-lx*s+lz*c,-s*1.2,0,-c*1.2,rand(18,28));}
     }
   }
@@ -1930,8 +2097,8 @@ function animate(){
    const Rr=a=>14+3*Math.sin(2*a);
    const x=Rr(rs.a)*Math.cos(rs.a),z=Rr(rs.a)*Math.sin(rs.a);
    const nx=Rr(rs.a+0.01)*Math.cos(rs.a+0.01),nz=Rr(rs.a+0.01)*Math.sin(rs.a+0.01);
-   if(HV.on)raft.position.set(-44,0.06+0.03*Math.sin(T*1.7),47.6);else raft.position.set(x,0.06+0.03*Math.sin(T*1.7),z);
-   raft.rotation.y=HV.on?0.15:Math.atan2(-(nz-z),nx-x);
+   if(HV.on)raft.position.set(-49.0,Math.max(WATER,terrainH(-49,30))+0.06,30);else raft.position.set(x,0.06+0.03*Math.sin(T*1.7),z);
+   raft.rotation.y=HV.on?Math.PI/2:Math.atan2(-(nz-z),nx-x);
    raft.rotation.z=0.02*Math.sin(T*1.3);raft.rotation.x=0.02*Math.sin(T*1.1);
    P.root.rotation.y=angLerp(P.root.rotation.y,rs.phase?-Math.PI/2:0,Math.min(1,dt*3));
    P.root.position.z=lerp(P.root.position.z,rs.phase?-0.05:0.4,Math.min(1,dt*2));  // 撐篙時站到竹筏右側邊緣
@@ -1959,7 +2126,7 @@ function animate(){
     s.timer-=dt;
     if(HV.on){if(s.timer<=0){hvTarget(s.t);s.timer=rand(1,2.5);}s.speed=2.6;}
     else if(feedFish){if(s.timer<=0){s.t.set(zone.x+rand(-3,3),-0.35,zone.z+rand(-3,3));s.timer=rand(1,2.5);}s.speed=3.6;}
-    else{if(s.timer<=0||s.c.distanceTo(s.t)<2)pickSchoolTarget(s);s.speed=(lowDO?1.2:2.1)*(1-0.45*nightK);if(lowDO)s.t.y=-0.2;}
+    else{if(s.timer<=0||s.c.distanceTo(s.t)<2)pickSchoolTarget(s);s.speed=(lowDO?1.2:2.1)*(1-0.45*nightK);if(lowDO)s.t.y=WATER-0.2;}
     _q.copy(s.t).sub(s.c);const d=_q.length();if(d>0.01)s.c.addScaledVector(_q,Math.min(1,s.speed*dt/d));
   }
   for(const f of fishes){
@@ -1969,20 +2136,20 @@ function animate(){
       f.pitch=Math.atan2(f.vel.y,hs+0.01);f.phase+=dt*24;
       f.g.position.copy(f.pos);f.g.rotation.set(Math.sin(f.phase*0.4)*0.35,f.yaw,f.pitch);
       f.tail.rotation.y=Math.sin(f.phase)*0.75;
-      if(f.pos.y<0&&f.vel.y<0){f.jump=false;splashRing(f.pos.x,f.pos.z,20,1.15);sndSplash(f.pos.x,f.pos.z,true);ripple(f.pos.x,f.pos.z,0.7);f.vel.multiplyScalar(0.3);f.pos.y=-0.15;}
+      if(f.pos.y<WATER&&f.vel.y<0){f.jump=false;splashRing(f.pos.x,f.pos.z,20,1.15);sndSplash(f.pos.x,f.pos.z,true);ripple(f.pos.x,f.pos.z,0.7);f.vel.multiplyScalar(0.3);f.pos.y=-0.15;}
       continue;
     }
     const tight=feedFish?0.35:1;
     _q.copy(f.school.c).addScaledVector(f.off,tight);
-    if(lowDO&&!feedFish)_q.y=-0.2;
+    if(lowDO&&!feedFish)_q.y=WATER-0.2;
     _q.sub(f.pos);const d=_q.length();
     const maxS=f.spd*(feedFish?1.6:1);
     _w.copy(_q).multiplyScalar(d>0.001?Math.min(maxS,d*0.9+0.4)/d:0);
     _w.x+=Math.sin(T*0.7+f.phase)*0.3;_w.z+=Math.cos(T*0.6+f.phase*1.3)*0.3;
     f.vel.lerp(_w,Math.min(1,dt*1.6));
     f.pos.addScaledVector(f.vel,dt);
-    {const fl=HV.on?47.8:45;f.pos.x=clamp(f.pos.x,-fl,fl);f.pos.z=clamp(f.pos.z,-fl,fl);}hvConstrain(f.pos);
-    f.pos.y=clamp(f.pos.y,terrainH(f.pos.x,f.pos.z)+0.3,-0.14);
+    {const fl=HV.on?HV.S:45;f.pos.x=clamp(f.pos.x,-fl,fl);f.pos.z=clamp(f.pos.z,-fl,fl);}hvConstrain(f.pos);
+    f.pos.y=Math.min(Math.max(f.pos.y,terrainH(f.pos.x,f.pos.z)+0.25),WATER-0.12);
     const hs=Math.hypot(f.vel.x,f.vel.z);
     if(hs>0.05)f.yaw=angLerp(f.yaw,Math.atan2(-f.vel.z,f.vel.x),Math.min(1,dt*4));
     f.pitch=lerp(f.pitch,clamp(Math.atan2(f.vel.y,hs+0.01),-0.5,0.5),Math.min(1,dt*3));
@@ -1992,9 +2159,9 @@ function animate(){
     f.tail.rotation.y=Math.sin(f.phase)*0.55;
     // 搶食時躍出水面（平時偶爾也會跳）
     const zx=f.pos.x-zone.x,zz=f.pos.z-zone.z;
-    const jr=HV.on?HV.jumpRate:feedFish&&zx*zx+zz*zz<42&&f.pos.y>-0.9?0.45:0.003;
-    if(Math.random()<dt*jr){f.jump=true;const h=rand(1.2,2.4);f.vel.set(Math.cos(f.yaw)*h,rand(3.4,4.9),-Math.sin(f.yaw)*h);f.pos.y=-0.05;splashRing(f.pos.x,f.pos.z,10,0.8);sndSplash(f.pos.x,f.pos.z,false);}
-    if(lowDO&&!feedFish&&Math.random()<dt*0.15)for(let k=0;k<3;k++)splash.spawn(f.pos.x,0.02,f.pos.z,rand(-0.3,0.3),rand(0.5,1),rand(-0.3,0.3),0.4);
+    const jr=HV.on?HV.jumpRate:feedFish&&zx*zx+zz*zz<42&&f.pos.y>WATER-0.9?0.45:0.003;
+    if(Math.random()<dt*jr){f.jump=true;const h=rand(1.2,2.4);f.vel.set(Math.cos(f.yaw)*h,rand(3.4,4.9),-Math.sin(f.yaw)*h);f.pos.y=WATER-0.05;splashRing(f.pos.x,f.pos.z,10,0.8);sndSplash(f.pos.x,f.pos.z,false);}
+    if(lowDO&&!feedFish&&Math.random()<dt*0.15)for(let k=0;k<3;k++)splash.spawn(f.pos.x,WATER+0.02,f.pos.z,rand(-0.3,0.3),rand(0.5,1),rand(-0.3,0.3),0.4);
   }
 
   // 草蝦
@@ -2010,7 +2177,7 @@ function animate(){
     if(s.flick>0){s.flick-=dt;s.pos.x-=Math.cos(s.yaw)*3*dt;s.pos.z+=Math.sin(s.yaw)*3*dt;}
     else{_q.set(s.t.x-s.pos.x,0,s.t.z-s.pos.z);const d=_q.length();
       if(d>0.3){s.yaw=angLerp(s.yaw,Math.atan2(-_q.z,_q.x),Math.min(1,dt*2));s.pos.x+=Math.cos(s.yaw)*speed*dt;s.pos.z-=Math.sin(s.yaw)*speed*dt;}}
-    {const sl=HV.on?47.8:44;s.pos.x=clamp(s.pos.x,-sl,sl);s.pos.z=clamp(s.pos.z,-sl,sl);}hvConstrain(s.pos);
+    {const sl=HV.on?HV.S:44;s.pos.x=clamp(s.pos.x,-sl,sl);s.pos.z=clamp(s.pos.z,-sl,sl);}hvConstrain(s.pos);
     // 腳隨移動速度擺動：步足走得越快擺得越快越大，彈跳時腹肢猛划
     {const mv=Math.hypot(s.pos.x-s.px,s.pos.z-s.pz)/Math.max(dt,1e-4);s.px=s.pos.x;s.pz=s.pos.z;
      const u=s.m.material.userData.u,wv=s.flick>0?0:Math.min(mv,1.5),k=Math.min(1,dt*6);
@@ -2031,7 +2198,7 @@ function animate(){
   {const P=splash.pos,Vv=splash.vel;
    for(let k=0;k<splash.n;k++){if(splash.life[k]<=0)continue;const j=k*3;
      Vv[j+1]-=9.8*dt;P[j]+=Vv[j]*dt;P[j+1]+=Vv[j+1]*dt;P[j+2]+=Vv[j+2]*dt;splash.life[k]-=dt;
-     if((P[j+1]<0.0&&Vv[j+1]<0)||splash.life[k]<=0){if(Math.random()<0.04)foam.spawn(P[j],0.06,P[j+2],Vv[j]*0.3,0,Vv[j+2]*0.3,rand(6,12));splash.kill(k);}}
+     if((P[j+1]<(P[j+2]>55?0:WATER)&&Vv[j+1]<0)||splash.life[k]<=0){if(Math.random()<0.04)foam.spawn(P[j],0.06,P[j+2],Vv[j]*0.3,0,Vv[j+2]*0.3,rand(6,12));splash.kill(k);}}
    splash.geo.attributes.position.needsUpdate=true;}
   for(const pool of [pelletsF,pelletsS]){const P=pool.pos,Vv=pool.vel,floatT=pool===pelletsF;
     for(let k=0;k<pool.n;k++){if(pool.life[k]<=0)continue;const j=k*3;pool.life[k]-=dt;
@@ -2052,15 +2219,15 @@ function animate(){
   {const P=bubbles.pos,Vv=bubbles.vel;
    for(let k=0;k<bubbles.n;k++){if(bubbles.life[k]<=0)continue;const j=k*3;bubbles.life[k]-=dt;
      P[j]+=Math.sin(T*5+k)*0.05*dt;P[j+1]+=Vv[j+1]*dt;
-     if(P[j+1]>-0.02||bubbles.life[k]<=0)bubbles.kill(k);}
+     if(P[j+1]>WATER-0.02||bubbles.life[k]<=0)bubbles.kill(k);}
    bubbles.geo.attributes.position.needsUpdate=true;}
   {const P=foam.pos,Vv=foam.vel;
    for(let k=0;k<foam.n;k++){if(foam.life[k]<=0)continue;const j=k*3;foam.life[k]-=dt;
      const damp=Math.max(0,1-dt*0.5);Vv[j]*=damp;Vv[j+2]*=damp;
      flowAt(P[j],P[j+2],_f);
      P[j]+=(Vv[j]+_f.x)*dt;P[j+2]+=(Vv[j+2]+_f.z)*dt;
-     if(P[j+2]<54.8){P[j+1]=0.06+0.04*Math.sin(P[j]*0.35+T*1.3);}
-     if(foam.life[k]<=0||Math.max(Math.abs(P[j]),Math.abs(P[j+2]))>50&&P[j+2]<54)foam.kill(k);}
+     if(P[j+2]<54.8){P[j+1]=WATER+0.06+0.04*Math.sin(P[j]*0.35+T*1.3);}
+     if(foam.life[k]<=0||Math.max(Math.abs(P[j]),Math.abs(P[j+2]))>(HV.on?HV.S+0.8:50)&&P[j+2]<54)foam.kill(k);}
    foam.geo.attributes.position.needsUpdate=true;}
 
   // 白鷺鷥
@@ -2082,7 +2249,7 @@ function animate(){
   else camera.position.y=Math.max(camera.position.y,0.8);
   camera.lookAt(cam.target);
   sky.position.copy(camera.position);
-  const uw=!cctvOn&&camera.position.y<-0.03&&Math.max(Math.abs(camera.position.x),Math.abs(camera.position.z))<52;
+  const uw=!cctvOn&&camera.position.y<WATER-0.03&&Math.max(Math.abs(camera.position.x),Math.abs(camera.position.z))<52;
   if(uw!==isUnder){isUnder=uw;scene.fog=uw?uwFog:skyFog;scene.background.copy(uw?uwFog.color:skyFog.color);sky.visible=!uw;$('#uw').style.display=uw?'block':'none';}
 
   updateLabels();updateRipples(dt);updateFollowBar();updateSound(dt);updateBirds(dt);updateHarvest(dt);updateTrack(dt);updateCCTV(dt);
