@@ -1048,7 +1048,7 @@ const INFO={
 };
 const raycaster=new THREE.Raycaster();
 const poleObjs=[];scene.traverse(o=>{if(o.userData&&o.userData.key==='pole')poleObjs.push(o);});
-function getPickables(){return [...(HV.on&&TRUCK?[TRUCK.g,netMesh]:[]),...birds.map(b=>b.o.root),...cctvs.map(c=>c.g),terrain,pond,sea,clams,gate,pump,hut,raft,...aerators.map(a=>a.g),...fishes.map(f=>f.g),...shrimps.map(s=>s.m),...egrets,...flyers.map(f=>f.g),...poleObjs];}
+function getPickables(){return [...clamActive.map(c=>c.g),...(HV.on&&TRUCK?[TRUCK.g,netMesh]:[]),...birds.map(b=>b.o.root),...cctvs.map(c=>c.g),terrain,pond,sea,clams,gate,pump,hut,raft,...aerators.map(a=>a.g),...fishes.map(f=>f.g),...shrimps.map(s=>s.m),...egrets,...flyers.map(f=>f.g),...poleObjs];}
 function keyOf(o){while(o){if(o.userData&&o.userData.key)return o;o=o.parent;}return null;}
 let selected=null;
 function pick(x,y){
@@ -1072,6 +1072,7 @@ function showInfo(key,obj){
   $('#info h3').textContent=t;$('#info p').textContent=d;
   selected=obj&&obj.userData.movable?obj:null;
   const isBird=key.startsWith('bird_')||key==='egret';$('#ccFindBtn').style.display=isBird?'inline-block':'none';selectedBird=isBird?obj:null;
+  if(selected&&key==='clam'){follow=selected;const cc=clamActive.find(q=>q.g===selected);setGoal(selected.position,1.9,cc?cc.yaw+0.55:cam.theta,1.15);setView(null);}
   if(selected&&key.startsWith('bird_')){follow=selected;setGoal(selected.position,4,cam.theta,1.3);setView(null);}
   if(selected&&(selected.userData.key==='milkfish'||selected.userData.key==='shrimp')){follow=selected;setGoal(selected.position,selected.userData.key==='shrimp'?3.5:4.5,cam.theta,1.25);setView(null);}
   $('#followBtn').style.display=selected?'inline-block':'none';
@@ -2277,6 +2278,93 @@ document.querySelectorAll('.modal .sheet,#picker .sheet,#info').forEach(el=>{let
   el.addEventListener('touchend',end);el.addEventListener('touchcancel',end);
   el.addEventListener('gesturestart',e=>e.preventDefault());el.addEventListener('gesturechange',e=>e.preventDefault());
   el.addEventListener('wheel',e=>{if(e.ctrlKey){e.preventDefault();textZoom=clamp(textZoom*(1-e.deltaY*0.01),0.85,2.4);applyTZ(true);}},{passive:false});});
+/* ---------- 會動的文蛤：開殼濾食、伸水管噴水、斧足挪動、鑽沙、受驚閉殼 ---------- */
+const CLAM_ACTIVE=36;
+const clamValveGeo=(()=>{const g=new THREE.SphereGeometry(1,22,12,0,Math.PI);g.scale(0.5,0.4,0.2);g.translate(0,-0.36,0);
+  const p=g.attributes.position,col=new Float32Array(p.count*3),c=new THREE.Color(),a=new THREE.Color(0xe6d6b2),b=new THREE.Color(0x7d5a38),rim=new THREE.Color(0x5e4630);
+  for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i);
+    const zig=Math.abs(((x*9+Math.abs((y*14)%2-1)*0.9)%2+2)%2-1);               // 文蛤殼上的鋸齒狀花紋
+    const band=0.5+0.5*Math.sin((y+0.76)*22);
+    c.copy(a).lerp(b,clamp(zig*0.75*band,0,0.85));if(y<-0.68)c.lerp(rim,0.5);
+    col[i*3]=c.r;col[i*3+1]=c.g;col[i*3+2]=c.b;}
+  g.setAttribute('color',new THREE.BufferAttribute(col,3));g.computeVertexNormals();return g;})();
+const clamFootGeo=merge([part(new THREE.SphereGeometry(1,12,8),0xf0d2c0,M(0.18,0,0,0,0,0,0.22,0.1,0.07))]);
+const clamSiphGeo=(()=>{const ps=[part(new THREE.CylinderGeometry(0.03,0.038,0.26,10,1,true),0xe9dcc4,M(0,0.13,0)),part(new THREE.TorusGeometry(0.032,0.008,6,12),0x8a6a44,M(0,0.26,0,Math.PI/2,0,0))];return merge(ps);})();
+const clamMat=vcMat({shininess:45,specular:0x666655,side:THREE.DoubleSide});
+const clamActive=[];
+const _cz=new THREE.Matrix4().makeScale(0,0,0);
+for(let i=0;i<CLAM_ACTIVE;i++){
+  clams.setMatrixAt(i,_cz);
+  const g=new THREE.Group();g.userData={key:'clam',movable:true};
+  const body=new THREE.Group();g.add(body);
+  const vL=new THREE.Mesh(clamValveGeo,clamMat),vR=new THREE.Mesh(clamValveGeo,clamMat);vR.scale.z=-1;body.add(vL,vR);
+  const foot=new THREE.Mesh(clamFootGeo,clamMat);foot.position.set(0.12,-0.62,0);foot.scale.setScalar(0.01);body.add(foot);
+  const siph=[];for(const z of[0.045,-0.045]){const sg=new THREE.Group();sg.position.set(-0.4,-0.18,z);sg.rotation.z=0.55;const m=new THREE.Mesh(clamSiphGeo,clamMat);sg.add(m);
+    const tip=new THREE.Object3D();tip.position.y=0.27;sg.add(tip);sg.scale.set(1,0.01,1);body.add(sg);siph.push({sg,tip});}
+  const s=rand(0.3,0.38),p=clamPos[i];g.scale.setScalar(s);
+  const c={g,body,vL,vR,foot,siph,s,pos:new V3(p.x,0,p.z),yaw:rand(0,6.28),state:'closed',t:rand(0.5,6),open:0,sp:0,ft:0,bury:0,tilt:0,
+    stroke:0,strokes:0,jetT:0,chkT:rand(0,0.2),from:new V3(),to:new V3()};
+  scene.add(g);clamActive.push(c);
+}
+clams.instanceMatrix.needsUpdate=true;
+const clamJets=makePool(400,0xeaf7ff,0.05,0.6),clamSand=makePool(300,0x8c7350,0.07,0.75),clamTrail=makePool(500,0x3f3326,0.06,0.55);
+INFO.clam=['蛤蠣（文蛤）','半埋在池底泥沙裡。打開殼會伸出兩根水管：一根把水吸進來濾食浮游藻類，一根把水排出去，所以能幫忙淨化水質。也會伸出斧足在沙上慢慢挪動、鑽進沙裡躲起來。附近有魚蝦經過或有人點水面時，會立刻閉殼並噴出一道水。（模型已放大約 4 倍）'];
+FOLLOW_NAMES.clam='文蛤';
+const _cw=new V3();
+function clamDisturbed(c){const x=c.pos.x,z=c.pos.z,gy=terrainH(x,z);
+  if(lastTap&&T-lastTap.t<0.35&&Math.hypot(x-lastTap.x,z-lastTap.z)<4)return true;
+  for(const f of fishes){if(Math.abs(f.pos.x-x)<1&&Math.abs(f.pos.z-z)<1&&f.pos.y<gy+0.75)return true;}
+  for(const s of shrimps){if(Math.abs(s.pos.x-x)<0.7&&Math.abs(s.pos.z-z)<0.7)return true;}
+  if(HV.on&&HV.phase==='drag'&&Math.abs(netZAt(x)-z)<1.5)return true;
+  return false;}
+function clamSnap(c){c.state='closed';c.t=rand(3,6);c.snap=0.18;
+  c.siph[0].tip.getWorldPosition(_cw);for(let k=0;k<10;k++)clamJets.spawn(_cw.x,_cw.y,_cw.z,rand(-0.15,0.15),rand(0.6,1.3),rand(-0.15,0.15),0.9);
+  const gy=terrainH(c.pos.x,c.pos.z);for(let k=0;k<8;k++){const a=rand(0,6.28);clamSand.spawn(c.pos.x+Math.cos(a)*0.08,gy+0.03,c.pos.z+Math.sin(a)*0.08,Math.cos(a)*0.25,rand(0.05,0.2),Math.sin(a)*0.25,0.9);}}
+function updateClams(dt){
+  for(let i=0;i<CLAM_ACTIVE;i++){const c=clamActive[i],vis=clams.count>i*16;c.g.visible=vis;if(!vis)continue;
+    c.t-=dt;c.chkT-=dt;
+    if(c.chkT<=0){c.chkT=0.2;if(c.state!=='closed'&&c.state!=='buried'&&c.state!=='burrow'&&clamDisturbed(c)){clamSnap(c);}}
+    let tOpen=0,tSp=0,tFt=0,tBury=c.bury;
+    if(c.state==='closed'){if(c.t<=0){c.state='open';c.t=rand(6,14);}}
+    else if(c.state==='open'){tOpen=0.14;tSp=1;
+      c.jetT-=dt;if(c.jetT<=0&&c.sp>0.7){c.jetT=rand(0.12,0.3);c.siph[0].tip.getWorldPosition(_cw);clamJets.spawn(_cw.x,_cw.y,_cw.z,rand(-0.05,0.05),rand(0.25,0.5),rand(-0.05,0.05),rand(0.6,1.1));
+        if(Math.random()<0.08)bubbles.spawn(_cw.x,_cw.y+0.05,_cw.z,0,rand(0.3,0.5),0,6);}
+      if(c.t<=0){const r=Math.random();
+        if(r<0.35){c.state='move';c.strokes=2+(Math.random()*3|0);c.stroke=0;c.yaw+=rand(-0.7,0.7);c.from.copy(c.pos);}
+        else if(r<0.5){c.state='burrow';c.t=3;}
+        else if(r<0.75){c.state='closed';c.t=rand(3,8);}
+        else c.t=rand(5,10);}}
+    else if(c.state==='move'){tOpen=0.07;tSp=0.4;c.stroke+=dt/1.7;const k=c.stroke%1;
+      tFt=k<0.4?smooth(0,0.4,k):1-smooth(0.4,1,k);c.tilt=Math.sin(k*Math.PI*2)*0.12;
+      if(k>=0.4){const step=0.11*c.s/0.34*dt/1.02;const nx=c.pos.x+Math.cos(c.yaw)*step,nz=c.pos.z-Math.sin(c.yaw)*step;
+        if(Math.max(Math.abs(nx),Math.abs(nz))<44){c.pos.x=nx;c.pos.z=nz;}else c.yaw+=Math.PI*dt;}
+      if(Math.random()<dt*3)clamTrail.spawn(c.pos.x,terrainH(c.pos.x,c.pos.z)+0.012,c.pos.z,0,0,0,25);
+      if(c.stroke>=c.strokes){c.state='open';c.t=rand(4,9);c.tilt=0;}}
+    else if(c.state==='burrow'){tBury=smooth(0,1,1-c.t/3);tFt=0.8;c.tilt=Math.sin(T*8)*0.06;
+      if(Math.random()<dt*4){const gy=terrainH(c.pos.x,c.pos.z);clamSand.spawn(c.pos.x+rand(-0.1,0.1),gy+0.02,c.pos.z+rand(-0.1,0.1),rand(-0.1,0.1),rand(0.05,0.15),rand(-0.1,0.1),0.8);}
+      if(c.t<=0){c.state='buried';c.t=rand(8,20);c.tilt=0;}}
+    else if(c.state==='buried'){tBury=1;tSp=0.6;tOpen=0.04;
+      if(c.t<=0){c.state='emerge';c.t=3;}}
+    else if(c.state==='emerge'){tBury=1-smooth(0,1,1-c.t/3);tFt=0.6;if(c.t<=0){c.state='open';c.t=rand(5,10);}}
+    // 動畫
+    const fast=c.snap>0;if(fast)c.snap-=dt;
+    c.open=lerp(c.open,tOpen,Math.min(1,dt*(fast?25:2.2)));c.sp=lerp(c.sp,tSp,Math.min(1,dt*(fast?20:1.5)));c.ft=lerp(c.ft,tFt,Math.min(1,dt*(fast?20:4)));c.bury=lerp(c.bury,tBury,Math.min(1,dt*3));
+    c.vL.rotation.x=-c.open;c.vR.rotation.x=c.open;
+    const sw=Math.sin(T*1.3+i)*0.08;c.siph.forEach((q,j)=>{q.sg.scale.set(1,Math.max(0.01,c.sp*(j?0.85:1)),1);q.sg.rotation.x=sw*(j?-1:1);});
+    c.foot.scale.set(Math.max(0.01,c.ft*1.2),Math.max(0.01,c.ft),Math.max(0.01,c.ft));c.foot.position.set(0.12+c.ft*0.18,-0.66-c.ft*0.05,0);
+    const gy=terrainH(c.pos.x,c.pos.z);
+    c.body.position.y=0.38-c.bury*0.42;c.body.rotation.z=c.tilt;
+    c.g.position.set(c.pos.x,gy,c.pos.z);c.g.rotation.y=c.yaw;}
+  // 粒子
+  {const P=clamJets.pos,V=clamJets.vel;for(let k=0;k<clamJets.n;k++){if(clamJets.life[k]<=0)continue;const j=k*3;clamJets.life[k]-=dt;
+    const d=Math.max(0,1-dt*2.5);V[j]*=d;V[j+2]*=d;V[j+1]=V[j+1]*d+0.15*dt;P[j]+=V[j]*dt;P[j+1]+=V[j+1]*dt;P[j+2]+=V[j+2]*dt;
+    if(clamJets.life[k]<=0||P[j+1]>WATER-0.02)clamJets.kill(k);}clamJets.geo.attributes.position.needsUpdate=true;}
+  {const P=clamSand.pos,V=clamSand.vel;for(let k=0;k<clamSand.n;k++){if(clamSand.life[k]<=0)continue;const j=k*3;clamSand.life[k]-=dt;
+    const d=Math.max(0,1-dt*3);V[j]*=d;V[j+2]*=d;V[j+1]=V[j+1]*d-0.25*dt;P[j]+=V[j]*dt;P[j+1]+=V[j+1]*dt;P[j+2]+=V[j+2]*dt;
+    if(clamSand.life[k]<=0)clamSand.kill(k);}clamSand.geo.attributes.position.needsUpdate=true;}
+  {let ch=false;for(let k=0;k<clamTrail.n;k++){if(clamTrail.life[k]<=0)continue;clamTrail.life[k]-=dt;if(clamTrail.life[k]<=0){clamTrail.kill(k);ch=true;}}
+   clamTrail.geo.attributes.position.needsUpdate=true;}
+}
 /* ---------- 模擬 ---------- */
 let S=18,DO=6.2,simAcc=0;
 function flowAt(x,z,out){
@@ -2541,7 +2629,7 @@ function animate(){
   const uw=!cctvOn&&camera.position.y<WATER-0.03&&Math.max(Math.abs(camera.position.x),Math.abs(camera.position.z))<52;
   if(uw!==isUnder){isUnder=uw;scene.fog=uw?uwFog:skyFog;scene.background.copy(uw?uwFog.color:skyFog.color);sky.visible=!uw;$('#uw').style.display=uw?'block':'none';}
 
-  updateLabels();updateRipples(dt);updateFollowBar();updateSound(dt);updateBirds(dt);updateHarvest(dt);updateFishing(dt);updateTrack(dt);updateCCTV(dt);
+  updateLabels();updateRipples(dt);updateFollowBar();updateSound(dt);updateBirds(dt);updateHarvest(dt);updateFishing(dt);updateClams(dt);updateTrack(dt);updateCCTV(dt);
   fitView();
   if(cctvOn)renderCCTV();else renderer.render(scene,camera);
   updateBirdBoxes();
