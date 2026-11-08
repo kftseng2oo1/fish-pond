@@ -718,7 +718,7 @@ function buildPerson(ch){
      for(let k=0;k<26;k++){const a=rand(-1.3,1.3),y=rand(0.24,0.48),r=0.165-(y-0.24)*0.0;tp.push(part(S(5,4),0xfbe6ee,M(Math.cos(a)*0.112,y,Math.sin(a)*0.16,0,0,0,0.012,0.012,0.012)));}
    }
    if(ch.print){for(let k=0;k<34;k++){const a=rand(-1.4,1.4),y=rand(0.08,0.48),lo=y<0.24;tp.push(part(S(5,4),ch.print,M(Math.cos(a)*(lo?(ch.belly?0.16:0.108):0.116),y,Math.sin(a)*(lo?(ch.belly?0.15:0.13):0.16),0,0,0,0.016,0.016,0.016)));}}
-   if(ch.vest){for(const s of[1,-1]){tp.push(part(B,ch.vest,M(0.11,0.33,0.08*s,0,0,0,0.04,0.3,0.1)));tp.push(part(B,0x5f5638,M(0.135,0.27,0.08*s,0,0,0,0.02,0.08,0.08)));tp.push(part(B,0x5f5638,M(0.13,0.4,0.085*s,0,0,0,0.02,0.06,0.06)));}tp.push(part(B,ch.vest,M(-0.09,0.33,0,0,0,0,0.05,0.3,0.26)));}
+   if(ch.vest){for(const s of[1,-1]){tp.push(part(B,ch.vest,M(0.105,0.29,0.062*s,0,0,0,0.03,0.25,0.075)));tp.push(part(B,0x5f5638,M(0.123,0.235,0.062*s,0,0,0,0.012,0.065,0.055)));tp.push(part(B,0x5f5638,M(0.12,0.34,0.064*s,0,0,0,0.012,0.045,0.045)));}tp.push(part(B,ch.vest,M(-0.088,0.29,0,0,0,0,0.04,0.25,0.22)));}
    const shCol=ch.sleeve==='none'?ch.skin:ch.shirt;
    for(const s of[1,-1])tp.push(part(S(),shCol,M(0,0.475,0.14*s,0,0,0,0.07,0.07,0.08)));
    if(ch.sleeve==='none'){tp.push(part(S(),ch.skin,M(0.035,0.465,0,0,0,0,0.085,0.045,0.095)));
@@ -2055,8 +2055,9 @@ const AF=buildPerson(AFU_CH);AF.root.userData={key:'angler',movable:true};AF.roo
 const rod=new THREE.Group();rod.position.set(0.32,1.02,0.2);AF.root.add(rod);
 const ROD_HAND=new V3(0.32,1.02,0.2),ROD_DOWN=new V3(0.05,0.04,0.42),FG_HOLD_Y=1.18;
 // 兩節手臂 IK：讓手（掌心中央）到達阿福身體座標裡的目標點；肩膀繞 x 軸張開、繞 z 軸前後擺，手肘只往前彎
-function fgArmIK(sz,tx,ty,tz,pelY){const shY=0.9+pelY+0.04+0.465,L1=0.28,L2=0.29;
-  const X=tx,Ty=ty-shY,Tz=tz-sz,ab=Math.atan2(-Tz,-Ty),q=Math.hypot(Ty,Tz);
+function fgArmIK(sz,tx,ty,tz,pelY,up){const shY=0.9+pelY+0.04+0.465,L1=0.28,L2=0.29;
+  // up=true：手肘往上抬、前臂由上往下壓（抓魚背用），避免手臂穿到魚身後面
+  const X=tx,Ty=ty-shY,Tz=tz-sz,ab=up?Math.atan2(Tz,Ty):Math.atan2(-Tz,-Ty),q=up?-Math.hypot(Ty,Tz):Math.hypot(Ty,Tz);
   const D=Math.min(L1+L2-0.001,Math.max(Math.abs(L1-L2)+0.001,Math.hypot(X,q)));
   const el=Math.acos(clamp((D*D-L1*L1-L2*L2)/(2*L1*L2),-1,1));
   const sh=Math.atan2(X,q)-Math.atan2(L2*Math.sin(el),L1+L2*Math.cos(el));
@@ -2191,7 +2192,7 @@ function updateFishing(dt){
     else if(ph==='land'){rodE=1.5;bend=0.25;pose=Object.assign({},stand,{shR:1.8,elR:0.6,shL:1.2,elL:1.2,tz:0.15});}
     else if(ph==='result'){rodE=0.03;bend=0;const o=FG.ctrl,sc=o?(FG.isFish?o.s0:o.s0*0.55):1,hh=(FG.isFish?0.09:0.06)*sc;
       pose=Object.assign({},stand,{tz:0,ty:0,pelY:-0.02});
-      const R=fgArmIK(0.172,0.48,FG_HOLD_Y+hh+0.012,0.1,pose.pelY),L=fgArmIK(-0.172,0.48,FG_HOLD_Y-hh-0.025,-0.18,pose.pelY);
+      const R=fgArmIK(0.172,0.47,FG_HOLD_Y+hh+0.015,0.19,pose.pelY,true),L=fgArmIK(-0.172,0.47,FG_HOLD_Y-hh-0.025,-0.21,pose.pelY,false);
       Object.assign(pose,{abR:R.ab,shR:R.sh,elR:R.el,abL:L.ab,shL:L.sh,elL:L.el});}
     else{rodE=0.75;bend=ph==='bite'?0.18:0.05;pose=Object.assign({},stand,{shR:0.95,elR:0.8,shL:0.75,elL:1.1});}}
   applyPose(AF,pose,Math.min(1,dt*(ph==='cast'?20:8)));
