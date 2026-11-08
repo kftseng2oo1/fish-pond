@@ -149,6 +149,33 @@ body.cctv #hvBar{bottom:calc(128px + env(safe-area-inset-bottom))}
 .hvtab th:first-child,.hvtab td:first-child{text-align:left}
 .hvtab th{color:#5b736c;font-weight:600}.hvtab tr.tot td{font-weight:800;color:#1f6b57}
 .hvtab small{font-weight:600;color:#5b736c}
+#fgUI{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(8px + env(safe-area-inset-bottom));width:min(440px,calc(100% - 16px));padding:10px 12px 12px;display:none;z-index:14;font-size:13.5px}
+body.fishing #fgUI{display:block}
+body.fishing #bar,body.fishing #labels,body.fishing #hvBar{display:none!important}
+body.cctv #fgUI{display:none!important}
+.fgTop{display:flex;align-items:center;gap:6px}.fgTop b{font-size:14.5px}.fgTop .sp{flex:1}
+#fgCount{font-size:12px;color:#5b736c}
+.fgTop button{border:0;border-radius:12px;padding:5px 9px;background:#e2f0e9;color:#13261f;font-size:12.5px;font-family:inherit}
+#fgCam{display:none}
+#fgMsg{margin:7px 0 6px;padding:6px 9px;border-radius:9px;background:#eef5f1;font-weight:600;min-height:20px}
+#fgMsg.warn{background:#fde6dc;color:#8a2c12}
+.fgSeg{display:flex;gap:6px;margin-bottom:6px}
+.fgSeg button{flex:1;border:0;border-radius:12px;padding:8px;background:#dfe7e3;color:#13261f;font-size:14px;font-family:inherit;font-weight:700}
+.fgSeg button.on{background:#1f6b57;color:#fff}
+.fgMeter{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:12.5px;color:#46605a}
+.fgBarBg{flex:1;height:12px;border-radius:6px;background:#dfe7e3;overflow:hidden;position:relative}
+.fgBarBg.ten{background:linear-gradient(90deg,#dfe7e3 0 60%,#f6e3b8 60% 85%,#f6cfc8 85%)}
+#fgPowBar{height:100%;width:0;background:linear-gradient(90deg,#3fae6a,#f2b33a,#d6362a)}
+#fgTenBar{height:100%;width:0;background:#3fae6a;transition:background .2s}
+#fgFight{display:none}#fgDist{font-size:12.5px;color:#46605a;text-align:right}
+.fgBtns{display:flex;gap:6px;margin-top:6px}
+#fgBtn{flex:1;border:0;border-radius:14px;padding:14px;font-size:17px;font-weight:800;font-family:inherit;background:#1f6b57;color:#fff;touch-action:none;-webkit-user-select:none;user-select:none}
+#fgBtn:disabled{opacity:.5}
+#fgBtn.hot{background:#d6362a;animation:fgPulse .35s infinite alternate}
+#fgBtn.fight{background:#2f4f8f}
+#fgBtn:active{transform:scale(.98)}
+@keyframes fgPulse{from{transform:scale(1)}to{transform:scale(1.04)}}
+#fgReel{border:0;border-radius:14px;padding:0 12px;background:#dfe7e3;color:#13261f;font-size:13px;font-family:inherit;display:none}
 #err{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:30px;text-align:center}
 @media (max-width:420px){#hud{width:172px;font-size:12px}#hint{top:auto;bottom:calc(110px + env(safe-area-inset-bottom))}}
 </style>
@@ -174,8 +201,9 @@ body.cctv #hvBar{bottom:calc(128px + env(safe-area-inset-bottom))}
     <button id="bMore" class="ico" aria-label="更多">⋯</button>
     <button id="bFeedF">🐟 餵虱目魚（3袋）</button>
     <button id="bFeedS">🦐 餵草蝦（3袋）</button>
+    <button id="bFish">🎣 阿福釣魚</button>
     <button id="bCctv">📹 監視器</button>
-    <button id="bHarvest">🎣 收成</button>
+    <button id="bHarvest">🚚 收成</button>
     <button id="bNight">🌙 夜間</button>
     <button id="bGate">🌊 海水閘門：關</button>
     <button id="bFresh">💧 淡水抽水：關</button>
@@ -243,6 +271,18 @@ body.cctv #hvBar{bottom:calc(128px + env(safe-area-inset-bottom))}
   <div class="hvrow"><button id="hvGo">開始收成</button><button id="hvNo" class="gray">再等等</button></div></div></div>
 <div id="hvDone" class="modal hide"><div class="sheet card"><h3>🚚 收成完成！</h3><div id="hvDoneTxt"></div><div id="hvDoneDetail"></div>
   <div class="hvrow"><button id="hvRestock">🐟 放魚苗重新養</button><button id="hvLater" class="gray">先不要</button></div></div></div>
+<div id="fgUI" class="card">
+  <div class="fgTop"><b>🎣 阿福的釣魚體驗</b><span id="fgCount"></span><span class="sp"></span><button id="fgCam">🎥</button><button id="fgLog">📒 釣況</button><button id="fgX">✕ 結束</button></div>
+  <div id="fgMsg"></div>
+  <div id="fgTarget" class="fgSeg"><button data-t="fish" class="on">🐟 釣虱目魚</button><button data-t="shrimp">🦐 釣草蝦</button></div>
+  <div id="fgPow" class="fgMeter"><span>力道</span><div class="fgBarBg"><div id="fgPowBar"></div></div></div>
+  <div id="fgFight"><div class="fgMeter"><span>張力</span><div class="fgBarBg ten"><div id="fgTenBar"></div></div></div><div id="fgDist"></div></div>
+  <div class="fgBtns"><button id="fgBtn">按住蓄力・放開拋竿</button><button id="fgReel">收竿重拋</button></div>
+</div>
+<div id="fgResult" class="modal hide"><div class="sheet card" style="text-align:center"><div id="fgResEmoji" style="font-size:54px;line-height:1.1">🐟</div><h3 id="fgResTitle" style="margin-top:4px"></h3>
+  <div id="fgResStat" style="display:flex;gap:8px"></div><div class="tip" id="fgResTxt" style="font-size:13.5px"></div>
+  <div class="hvrow"><button id="fgFree">🐟 放生</button><button id="fgKeep" class="gray">🧺 帶回家</button><button id="fgShot" class="gray">📷 拍照</button></div></div></div>
+<div id="fgLogM" class="modal hide"><div class="sheet card"><h3>📒 阿福的釣況紀錄</h3><div id="fgLogBody"></div><button class="done" id="fgLogDone">關閉</button></div></div>
 <div id="picker" class="hide"><div class="sheet card"><h3>選擇竹筏上的養殖戶</h3><div id="chars"></div><button id="pickClose">完成</button></div></div>
 <div id="err" class="card">3D 引擎載入失敗，請確認網路連線後重新整理。</div>
 
@@ -667,6 +707,7 @@ function buildPerson(ch){
   const torso=G(pelvis,0,0.04,0);
   {const tp=[];
    tp.push(part(new THREE.CylinderGeometry(0.14,0.125,0.24,16),ch.waders?ch.wader:ch.shirt,M(0,0.12,0,0,0,0,0.76,1,1)));
+   if(ch.belly)tp.push(part(S(),ch.shirt,M(0.035,0.13,0,0,0,0,0.13,0.14,0.15)));
    tp.push(part(new THREE.CylinderGeometry(0.168,0.14,0.27,16),ch.shirt,M(0,0.36,0,0,0,0,0.68,1,1)));
    if(ch.waders){
      tp.push(part(B,ch.wader,M(0.098,0.3,0,0,0,0,0.03,0.2,0.2)));
@@ -676,6 +717,8 @@ function buildPerson(ch){
    if(ch.sleeve==='long'){ // 碎花：小白點
      for(let k=0;k<26;k++){const a=rand(-1.3,1.3),y=rand(0.24,0.48),r=0.165-(y-0.24)*0.0;tp.push(part(S(5,4),0xfbe6ee,M(Math.cos(a)*0.112,y,Math.sin(a)*0.16,0,0,0,0.012,0.012,0.012)));}
    }
+   if(ch.print){for(let k=0;k<34;k++){const a=rand(-1.4,1.4),y=rand(0.08,0.48),lo=y<0.24;tp.push(part(S(5,4),ch.print,M(Math.cos(a)*(lo?(ch.belly?0.16:0.108):0.116),y,Math.sin(a)*(lo?(ch.belly?0.15:0.13):0.16),0,0,0,0.016,0.016,0.016)));}}
+   if(ch.vest){for(const s of[1,-1]){tp.push(part(B,ch.vest,M(0.11,0.33,0.08*s,0,0,0,0.04,0.3,0.1)));tp.push(part(B,0x5f5638,M(0.135,0.27,0.08*s,0,0,0,0.02,0.08,0.08)));tp.push(part(B,0x5f5638,M(0.13,0.4,0.085*s,0,0,0,0.02,0.06,0.06)));}tp.push(part(B,ch.vest,M(-0.09,0.33,0,0,0,0,0.05,0.3,0.26)));}
    const shCol=ch.sleeve==='none'?ch.skin:ch.shirt;
    for(const s of[1,-1])tp.push(part(S(),shCol,M(0,0.475,0.14*s,0,0,0,0.07,0.07,0.08)));
    if(ch.sleeve==='none'){tp.push(part(S(),ch.skin,M(0.035,0.465,0,0,0,0,0.085,0.045,0.095)));
@@ -716,6 +759,8 @@ function buildPerson(ch){
      hp.push(part(new THREE.ConeGeometry(0.33,0.15,24,1,true),0xd8c286,M(0,0.29,0)));
      hp.push(part(new THREE.ConeGeometry(0.33,0.15,24,1,true),0xb59f62,M(0,0.287,0,Math.PI,0,0,1,0.05,1)));
    }
+   if(ch.hat==='bucket'){hp.push(part(new THREE.CylinderGeometry(0.092,0.105,0.1,18),ch.hatCol,M(-0.005,0.205,0)));hp.push(part(new THREE.CylinderGeometry(0.17,0.17,0.012,22),ch.hatCol,M(-0.005,0.16,0,0,0,0.04)));hp.push(part(new THREE.CylinderGeometry(0.107,0.107,0.025,18),0x6b5a3a,M(-0.005,0.175,0)));}
+   if(ch.glasses){for(const s of[1,-1])hp.push(part(B,0x141414,M(0.093,0.12,0.033*s,0,0,0,0.008,0.024,0.034)));hp.push(part(B,0x141414,M(0.096,0.126,0,0,0,0,0.006,0.006,0.03)));}
    if(ch.hat==='cap'){
      hp.push(part(new THREE.SphereGeometry(1,18,10,0,Math.PI*2,0,1.25),ch.capCol,M(-0.005,0.125,0,0,0,0.1,0.103,0.125,0.096)));
      hp.push(part(B,ch.capCol,M(-0.12,0.16,0,0,0,0.15,0.11,0.012,0.15)));
@@ -751,9 +796,9 @@ function buildPerson(ch){
     mk(g,limb(0.068,0.054,0.42,lower,null,1));
     const k=G(g,0,-0.42,0);
     if(ch.pantsRolled)mk(k,limb(0.06,0.046,0.4,ch.pants,ch.boots,0.22));
-    else mk(k,limb(0.054,0.046,0.4,ch.waders?ch.wader:ch.boots,null,1));
+    else mk(k,limb(0.054,0.046,0.4,ch.shorts?ch.skin:(ch.waders?ch.wader:ch.boots),null,1));
     const bp=[part(B,ch.boots,M(0.045,-0.425,0,0,0,0,0.25,0.075,0.1)),part(S(),ch.boots,M(0.16,-0.425,0,0,0,0,0.055,0.037,0.05))];
-    if(!ch.waders)bp.push(part(new THREE.CylinderGeometry(0.058,0.058,0.03,12),ch.boots,M(0,-0.1,0)));
+    if(!ch.waders&&!ch.shorts)bp.push(part(new THREE.CylinderGeometry(0.058,0.058,0.03,12),ch.boots,M(0,-0.1,0)));
     mk(k,merge(bp));
     hip.push(g);knee.push(k);
   }
@@ -1228,7 +1273,7 @@ function svNext(){const k=SV_SEQ[svI++%SV_SEQ.length];svT=0;follow=null;
   if(k==='aer'){const a=aerators[(Math.random()*4)|0];setGoal(new V3(a.x,0.3,a.z),10,cam.theta,1.15);}
   if(k==='bird'){const b=birds[(Math.random()*birds.length)|0];follow=b.o.root;setGoal(b.o.root.position,5,cam.theta,1.25);}
   if(k==='gate')setGoal(new V3(0,1.5,55),24,Math.PI+0.55,1.12);}
-function enterSaver(){if(cctvOn)exitCCTV();saver=true;svI=0;document.body.classList.add('saver');closeModal('shot');$('#info').classList.add('hide');moreMenu.classList.remove('show');
+function enterSaver(){if(FG.on)fgExit();if(cctvOn)exitCCTV();saver=true;svI=0;document.body.classList.add('saver');closeModal('shot');$('#info').classList.add('hide');moreMenu.classList.remove('show');
   const de=document.documentElement,rf=de.requestFullscreen||de.webkitRequestFullscreen;if(rf){try{const pr=rf.call(de);if(pr&&pr.catch)pr.catch(()=>{});}catch(e){}}
   try{if(navigator.wakeLock)navigator.wakeLock.request('screen').then(w=>{wakeLock=w;}).catch(()=>{});}catch(e){}
   svNext();toast('螢幕保護中 · 點一下畫面離開');}
@@ -1811,7 +1856,7 @@ document.querySelectorAll('#hvShip button').forEach(b=>b.onclick=()=>{hvShipSel=
 function hvAsk(){if(HV.on){toast('正在收成中');return;}
   if(!fishes.length&&!shrimps.length){toast('池裡沒有魚蝦可以收成，先去「放養數量」放魚苗吧');return;}
   $('#hvAskTxt').textContent=`池裡現在有虱目魚 ${fishes.length} 尾（約實際 ${(fishes.length*FISH_REAL/10000).toFixed(1)} 萬尾）、草蝦 ${shrimps.length} 隻。`;openModal('hvConfirm');}
-function hvStart(){closeModal('hvConfirm');if(raftState.phase){toast('等竹筏餵完料再收成');return;}
+function hvStart(){closeModal('hvConfirm');if(FG.on)fgExit();if(raftState.phase){toast('等竹筏餵完料再收成');return;}
   if(cctvOn)exitCCTV();
   const total=fishes.length+shrimps.length;
   Object.assign(HV,{on:true,phase:'fast',t:0,netZ:HV_SHORE-2.6,k:0,jumpRate:0.003,speed:1,auto:true,ship:hvShipSel,S:44,caught:{fish:0,shrimp:0},grade:{big:0,mid:0,small:0,shrimp:0},kg:0,
@@ -1990,6 +2035,206 @@ function updateHarvest(dt0){if(!HV.on)return;const dt=dt0*HV.speed;HV.t+=dt;cons
 function hvNear(p){if(!HV.on)return false;for(const c of HV.crew){if(Math.hypot(c.pos.x-p.x,c.pos.z-p.z)<7)return true;}return false;}
 addLabel('🚚 收購貨車',()=>HV.on&&TRUCK&&TRUCK.g.visible?new V3(HV.truckX,4.2,TRUCK_Z):null);
 addLabel('⚖️ 分級過磅',()=>HV.on&&station&&station.g.visible?new V3(ST.x,3.2,ST.z):null);
+/* ---------- 釣客阿福：釣魚體驗 ---------- */
+const AFU_CH={name:'阿福',skin:0xd2a07e,skinDark:0xbb8866,brow:0x2a2018,hair:0x2a2420,hairStyle:'short',shirt:0x2f9fc4,print:0xfff3c4,sleeve:'short',
+  pants:0xc8b48a,shorts:true,boots:0x3a3a3a,hat:'bucket',hatCol:0xd8cfae,glasses:true,vest:0x7d7350,belly:true,scale:1.0};
+INFO.angler=['釣客阿福','從台南市區來的遊客，報名了魚塭的釣魚體驗，戴著漁夫帽、穿釣魚背心，第一次在魚塭釣虱目魚和草蝦。按下排「🎣 釣魚體驗」幫他甩竿！'];
+FOLLOW_NAMES.angler='釣客阿福';
+const FG={on:false,phase:'idle',target:'fish',power:0,auto:true,bob:new V3(),bobV:new V3(),bobShow:false,bobDip:0,ctrl:null,isFish:true,
+  nib:0,nibT:0,biteT:0,tension:0,dist:0,ang:0,surge:0,surgeT:0,slackT:0,reeling:false,landT:0,msgT:0,result:null,today:0,clickT:0,jumpT:0};
+/* 阿福與釣具 */
+const AF=buildPerson(AFU_CH);AF.root.userData={key:'angler',movable:true};AF.root.position.set(1.35,0.09,-0.3);AF.root.rotation.y=Math.PI/2;raft.add(AF.root);
+{const st=new THREE.Mesh(merge([part(new THREE.CylinderGeometry(0.17,0.2,0.36,12),0x2f6fb0,M(0,0.18,0)),part(new THREE.CylinderGeometry(0.18,0.18,0.03,12),0x3d86d0,M(0,0.37,0))]),vcMat());
+ st.position.set(1.32,0.09,-0.22);st.castShadow=true;raft.add(st);
+ const bk=new THREE.Mesh(merge([part(new THREE.CylinderGeometry(0.17,0.14,0.3,14,1,true),0xe9a23b,M(0,0.15,0)),part(new THREE.CylinderGeometry(0.14,0.14,0.02,14),0xd4902e,M(0,0.01,0))]),vcMat({side:THREE.DoubleSide}));
+ bk.position.set(1.85,0.09,0.1);bk.castShadow=true;raft.add(bk);
+ const tb=new THREE.Mesh(merge([part(new THREE.BoxGeometry(0.34,0.14,0.22),0x3a6b45,M(0,0.07,0)),part(new THREE.BoxGeometry(0.36,0.03,0.24),0x2f5a39,M(0,0.15,0))]),vcMat());
+ tb.position.set(0.85,0.09,-0.45);tb.castShadow=true;raft.add(tb);
+ FG.bucket=bk;}
+const rod=new THREE.Group();rod.position.set(0.32,1.02,0.2);AF.root.add(rod);
+const rodSegs=[];{let parent=rod;const L=[0.95,0.85,0.75],R=[0.016,0.011,0.007];
+  for(let i=0;i<3;i++){const g=new THREE.Group();if(i)g.position.x=L[i-1];parent.add(g);
+    const m=new THREE.Mesh(new THREE.CylinderGeometry(R[i]*0.75,R[i],L[i],6).rotateZ(-Math.PI/2).translate(L[i]/2,0,0),lamb(i===0?0x2a2a2a:0x404850));g.add(m);rodSegs.push(g);parent=g;}
+  const reel=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,0.05,12).rotateX(Math.PI/2),lamb(0xb8bec4));reel.position.set(0.22,-0.05,0);rod.add(reel);
+  const tip=new THREE.Object3D();tip.position.x=0.75;rodSegs[2].add(tip);FG.tip=tip;}
+const bobber=new THREE.Mesh(merge([part(new THREE.SphereGeometry(0.05,10,8),0xf2f2f2,M(0,-0.02,0,0,0,0,1,0.9,1)),part(new THREE.SphereGeometry(0.05,10,8,0,Math.PI*2,0,Math.PI/2),0xe23b2b,M(0,-0.02,0,0,0,0,1,0.9,1)),
+  cyl([0,0.02,0],[0,0.16,0],0.007,0xff7a1a,5)]),vcMat());bobber.visible=false;scene.add(bobber);
+const lineGeo=new THREE.BufferGeometry().setFromPoints(Array.from({length:13},()=>new V3()));
+const fishLine=new THREE.Line(lineGeo,new THREE.LineBasicMaterial({color:0xf4f4f4,transparent:true,opacity:0.85}));fishLine.frustumCulled=false;fishLine.visible=false;scene.add(fishLine);
+const leaderGeo=new THREE.BufferGeometry().setFromPoints([new V3(),new V3()]);
+const leader=new THREE.Line(leaderGeo,new THREE.LineBasicMaterial({color:0xdddddd,transparent:true,opacity:0.6}));leader.frustumCulled=false;leader.visible=false;scene.add(leader);
+const _ft=new V3(),_fa=new V3(),_fd=new V3(),_fb=new V3(),_fc=new V3();
+function fgDir(out){return out.set(0,0,-1).applyQuaternion(raft.quaternion).setY(0).normalize();}
+function fgAnglerPos(out){AF.root.getWorldPosition(out);return out;}
+/* 介面 */
+let fgLog={list:[]};try{fgLog=JSON.parse(localStorage.getItem('pond_fishing_log')||'{"list":[]}');if(!fgLog.list)fgLog={list:[]};}catch(e){}
+function fgSave(){try{localStorage.setItem('pond_fishing_log',JSON.stringify({list:fgLog.list.slice(-200)}));}catch(e){}}
+function fgMsg(t,warn){const m=$('#fgMsg');m.textContent=t;m.classList.toggle('warn',!!warn);}
+function fgBtnUI(){const b=$('#fgBtn'),ph=FG.phase;b.classList.remove('hot','fight');
+  $('#fgTarget').style.display=(ph==='idle'||ph==='charge')?'flex':'none';$('#fgPow').style.display=(ph==='idle'||ph==='charge')?'block':'none';
+  $('#fgFight').style.display=ph==='fight'?'block':'none';$('#fgReel').style.display=(ph==='wait'||ph==='nibble'||ph==='bite')?'inline-block':'none';
+  b.disabled=(ph==='cast'||ph==='land'||ph==='result');
+  b.textContent=ph==='idle'||ph==='charge'?'按住蓄力・放開拋竿':ph==='cast'?'拋竿中…':ph==='wait'||ph==='nibble'?'🎯 提竿':ph==='bite'?'⚡ 提竿！':ph==='fight'?'⟳ 按住收線':ph==='land'?'起魚中…':'';
+  if(ph==='bite')b.classList.add('hot');if(ph==='fight')b.classList.add('fight');}
+function fgCountUI(){const d=new Date().toDateString();const n=fgLog.list.filter(r=>new Date(r.t).toDateString()===d).length;$('#fgCount').textContent=`今天釣到 ${n} 尾`;}
+function fgEnter(){if(HV.on){toast('收成中，不能釣魚');return;}if(cctvOn)exitCCTV();if(saver)exitSaver();
+  FG.on=true;FG.phase='idle';FG.auto=true;document.body.classList.add('fishing');$('#info').classList.add('hide');moreMenu.classList.remove('show');
+  follow=null;goal=null;setView(null);fgMsg('選擇要釣什麼，按住下面的按鈕蓄力，放開就拋竿');fgBtnUI();fgCountUI();$('#fgCam').style.display='none';}
+function fgExit(){if(FG.ctrl)fgRelease(false);FG.on=false;FG.phase='idle';document.body.classList.remove('fishing');bobber.visible=fishLine.visible=leader.visible=false;FG.bobShow=false;closeModal('fgResult');}
+function fgRelease(keep){const o=FG.ctrl;if(!o){return;}FG.ctrl=null;
+  if(keep){if(FG.isFish){const i=fishes.indexOf(o);if(i>=0){fishes.splice(i,1);scene.remove(o.g);}}else{const i=shrimps.indexOf(o);if(i>=0){shrimps.splice(i,1);scene.remove(o.m);}}}
+  else{fgDir(_fd);fgAnglerPos(_fa);o.pos.set(_fa.x+_fd.x*1.6,Math.max(WATER-0.35,terrainH(_fa.x+_fd.x*1.6,_fa.z+_fd.z*1.6)+0.3),_fa.z+_fd.z*1.6);
+    if(FG.isFish){o.vel.copy(_fd).multiplyScalar(3.5);o.g.rotation.x=0;}else{o.t.set(o.pos.x+_fd.x*6,0,o.pos.z+_fd.z*6);o.timer=3;o.flick=0.35;}
+    splashRing(o.pos.x,o.pos.z,10,0.6);ripple(o.pos.x,o.pos.z,0.6);}}
+$('#bFish').onclick=fgEnter;$('#fgX').onclick=fgExit;
+$('#fgCam').onclick=()=>{FG.auto=true;$('#fgCam').style.display='none';follow=null;goal=null;};
+canvas.addEventListener('pointerdown',()=>{if(FG.on&&FG.auto){FG.auto=false;$('#fgCam').style.display='inline-block';}});
+document.querySelectorAll('#fgTarget button').forEach(b=>b.onclick=()=>{FG.target=b.dataset.t;document.querySelectorAll('#fgTarget button').forEach(x=>x.classList.toggle('on',x===b));
+  fgMsg(FG.target==='fish'?'釣虱目魚：浮標淺，魚會先輕啄幾下，浮標整個沉下去再提竿':'釣草蝦：餌沉到池底，浮標輕輕抖、慢慢被拖走時再提竿');});
+const fgBtn=$('#fgBtn');
+fgBtn.addEventListener('pointerdown',e=>{e.preventDefault();AC();const ph=FG.phase;
+  if(ph==='idle'){FG.phase='charge';FG.power=0;fgBtnUI();}
+  else if(ph==='wait'){fgMsg('還沒有魚咬餌，耐心等浮標的動靜');}
+  else if(ph==='nibble'){fgSpook('太早提竿了，魚嚇跑了！看到浮標整個沉下去再提');}
+  else if(ph==='bite'){fgHook();}
+  else if(ph==='fight'){FG.reeling=true;}});
+const fgUp=()=>{if(FG.phase==='charge')fgCast();FG.reeling=false;};
+fgBtn.addEventListener('pointerup',fgUp);fgBtn.addEventListener('pointercancel',fgUp);fgBtn.addEventListener('pointerleave',()=>{FG.reeling=false;});
+$('#fgReel').onclick=()=>{if(FG.ctrl)fgRelease(false);FG.phase='idle';bobber.visible=fishLine.visible=leader.visible=false;FG.bobShow=false;fgMsg('收竿了，再拋一次吧');fgBtnUI();};
+/* 拋竿 */
+function fgCast(){FG.phase='cast';fgBtnUI();const p=FG.power;
+  raft.updateMatrixWorld(true);FG.tip.getWorldPosition(FG.bob);fgDir(_fd);
+  const hv=3+8*p;FG.bobV.set(_fd.x*hv,3+2.5*p,_fd.z*hv);FG.bobShow=true;bobber.visible=fishLine.visible=true;
+  burst(0.12,2500,0.25,'highpass');tone(0.05,900,300,0.25,'sine');fgMsg(p>0.85?'用力一甩！':'拋出去了…');}
+function fgSpook(msg){const o=FG.ctrl;FG.ctrl=null;if(o){if(FG.isFish){fgDir(_fd);o.vel.set(-_fd.x*4+rand(-2,2),0,-_fd.z*4+rand(-2,2));}else{o.flick=0.35;o.timer=2;}splashRing(FG.bob.x,FG.bob.z,8,0.5);}
+  FG.phase='wait';FG.nextT=rand(2,5);fgMsg(msg,true);fgBtnUI();}
+function fgHook(){FG.phase='fight';const o=FG.ctrl,sz=FG.isFish?(o.s0-0.8)/0.25:(o.s0-1.25)/0.3;
+  fgAnglerPos(_fa);FG.dist=Math.hypot(FG.bob.x-_fa.x,FG.bob.z-_fa.z);FG.ang=0;FG.tension=0.35;FG.slackT=0;FG.surge=0;FG.surgeT=0.5;FG.size=clamp(sz,0,1);
+  FG.str=FG.isFish?0.55+0.45*FG.size:0.3+0.25*FG.size;
+  try{navigator.vibrate&&navigator.vibrate(120);}catch(e){}
+  tone(0.12,700,1200,0.12,'square');sndSplash(FG.bob.x,FG.bob.z,true);splashRing(FG.bob.x,FG.bob.z,14,0.9);
+  fgMsg(FG.isFish?'中魚了！按住收線，張力太高就放開讓牠游一下':'蝦上鉤了！輕輕收線，太鬆會脫鉤',false);fgBtnUI();}
+function fgFail(msg){const o=FG.ctrl;FG.ctrl=null;if(o){if(FG.isFish){o.g.rotation.x=0;fgDir(_fd);o.vel.set(_fd.x*4,0,_fd.z*4);}else{o.flick=0.35;o.timer=2;}}
+  FG.phase='idle';bobber.visible=fishLine.visible=leader.visible=false;FG.bobShow=false;fgMsg(msg,true);fgBtnUI();}
+/* 結果 */
+function fgLand(){FG.phase='land';FG.landT=0;fgBtnUI();tone(0.1,880,880,0.1,'triangle');tone(0.1,1320,1320,0.18,'triangle',0.1);}
+function fgShowResult(){const o=FG.ctrl,isF=FG.isFish;
+  const len=isF?Math.round(30+FG.size*15+rand(-1,1)):Math.round(12+FG.size*8+rand(-0.5,0.5)),w=isF?Math.round(0.01*len*len*len):Math.round(0.0085*len*len*len);
+  FG.result={t:Date.now(),sp:isF?'虱目魚':'草蝦',len,w};
+  const best=fgLog.list.filter(r=>r.sp===FG.result.sp).reduce((m,r)=>Math.max(m,r.len),0);
+  const cm=isF?(len>=42?'大物！這尾很肥美，魚肚應該很有油':len>=36?'標準的上市尺寸，很漂亮':'小隻的，放生讓牠再長大吧'):(len>=18?'好大隻的草蝦！':len>=15?'很漂亮的草蝦':'小草蝦，放回去養大一點');
+  $('#fgResEmoji').textContent=isF?'🐟':'🦐';$('#fgResTitle').textContent=`阿福釣到${FG.result.sp}了！`;
+  $('#fgResStat').innerHTML=`<div class="hvres"><b>${len}</b><span>公分</span></div><div class="hvres"><b>${w}</b><span>公克</span></div><div class="hvres"><b>${(w/600).toFixed(2)}</b><span>台斤</span></div>`;
+  $('#fgResTxt').textContent=cm+(len>best?`　🏆 打破${FG.result.sp}最大紀錄（原 ${best||0} 公分）`:'');
+  openModal('fgResult');FG.phase='result';fgBtnUI();}
+function fgDecide(keep){if(!FG.result)return;FG.result.kept=keep;fgLog.list.push(FG.result);fgSave();fgCountUI();
+  if(keep){FG.bucketN=(FG.bucketN||0)+1;toast(`🧺 ${FG.result.sp}放進阿福的水桶`);}else toast('🐟 放生了，謝謝你讓牠回家');
+  fgRelease(keep);FG.result=null;closeModal('fgResult');FG.phase='idle';bobber.visible=fishLine.visible=leader.visible=false;FG.bobShow=false;fgMsg('再拋一竿吧！');fgBtnUI();}
+$('#fgKeep').onclick=()=>fgDecide(true);$('#fgFree').onclick=()=>fgDecide(false);$('#fgShot').onclick=()=>{closeModal('fgResult');wantShot=true;setTimeout(()=>openModal('fgResult'),900);};
+function fgRenderLog(){const L=fgLog.list,fish=L.filter(r=>r.sp==='虱目魚'),sh=L.filter(r=>r.sp==='草蝦');
+  const bf=fish.reduce((m,r)=>r.len>(m?m.len:0)?r:m,null),bs=sh.reduce((m,r)=>r.len>(m?m.len:0)?r:m,null);
+  const ds=t=>{const d=new Date(t);return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;};
+  $('#fgLogBody').innerHTML=`<div id="hvDoneTxt" style="display:flex;gap:8px"><div class="hvres"><b>${fish.length}</b><span>尾虱目魚</span></div><div class="hvres"><b>${sh.length}</b><span>隻草蝦</span></div><div class="hvres"><b>${L.filter(r=>r.kept).length}</b><span>帶回家</span></div></div>
+   <div class="tip">🏆 最大虱目魚：${bf?bf.len+' 公分（'+bf.w+' 公克）':'還沒有'}　🏆 最大草蝦：${bs?bs.len+' 公分':'還沒有'}</div>
+   <table class="hvtab"><tr><th>時間</th><th>魚種</th><th>長度</th><th>重量</th><th>處理</th></tr>${L.slice(-12).reverse().map(r=>`<tr><td>${ds(r.t)}</td><td>${r.sp}</td><td>${r.len} 公分</td><td>${r.w} 公克</td><td>${r.kept?'帶回家':'放生'}</td></tr>`).join('')||'<tr><td colspan="5" style="text-align:center">還沒有紀錄</td></tr>'}</table>`;}
+$('#fgLog').onclick=()=>{fgRenderLog();openModal('fgLogM');};$('#fgLogDone').onclick=()=>closeModal('fgLogM');
+/* 被魚線控制的魚／蝦 */
+function fgBait(out){return FG.isFish?out.set(FG.bob.x,WATER-0.35,FG.bob.z):out.set(FG.bob.x,terrainH(FG.bob.x,FG.bob.z)+0.06,FG.bob.z);}
+function fgDrive(o,dt){const isF=FG.isFish,mesh=isF?o.g:o.m,ph=FG.phase;
+  if(ph==='approach'||ph==='nibble'||ph==='bite'){fgBait(_fb);
+    if(ph==='approach'){const dx=_fb.x-o.pos.x,dz=_fb.z-o.pos.z,dy=_fb.y-o.pos.y,d=Math.hypot(dx,dz);const sp=(isF?1.9:0.85)*dt;
+      if(d>0.55){o.pos.x+=dx/d*sp;o.pos.z+=dz/d*sp;o.pos.y+=dy*Math.min(1,dt*1.5);}else{FG.phase='nibble';FG.nib=isF?(1+(Math.random()*3|0)):(2+(Math.random()*3|0));FG.nibT=rand(0.6,1.4);}
+      if(d>0.05)o.yaw=angLerp(o.yaw,Math.atan2(-dz,dx),Math.min(1,dt*4));}
+    else{o.pos.x+=(_fb.x-0.45*Math.cos(o.yaw)-o.pos.x)*Math.min(1,dt*3);o.pos.z+=(_fb.z+0.45*Math.sin(o.yaw)-o.pos.z)*Math.min(1,dt*3);o.pos.y+=(_fb.y-o.pos.y)*Math.min(1,dt*3);}}
+  else if(ph==='fight'){fgAnglerPos(_fa);fgDir(_fd);
+    const ang=FG.ang+Math.sin(T*0.8)*0.35;const c=Math.cos(ang),s=Math.sin(ang);const dx=_fd.x*c-_fd.z*s,dz=_fd.x*s+_fd.z*c;
+    const tx=_fa.x+dx*FG.dist,tz=_fa.z+dz*FG.dist;
+    const ty=isF?(FG.jumpT>0?WATER+Math.sin((1-FG.jumpT/0.7)*Math.PI)*0.9:WATER-0.3):Math.min(WATER-0.1,lerp(terrainH(tx,tz)+0.1,WATER-0.15,clamp(1-FG.dist/6,0,1)));
+    o.pos.x+=(tx-o.pos.x)*Math.min(1,dt*5);o.pos.z+=(tz-o.pos.z)*Math.min(1,dt*5);o.pos.y+=(ty-o.pos.y)*Math.min(1,dt*(FG.jumpT>0?12:5));
+    o.yaw=angLerp(o.yaw,Math.atan2(-dz,dx),Math.min(1,dt*5));
+    if(isF&&Math.random()<dt*(FG.surge>0?3:0.8)){splash.spawn(o.pos.x,WATER+0.03,o.pos.z,rand(-0.5,0.5),rand(0.8,1.8),rand(-0.5,0.5),0.5);}}
+  else if(ph==='land'||ph==='result'){FG.tip.getWorldPosition(_ft);o.pos.lerp(_fc.set(_ft.x,_ft.y-(isF?0.55:0.3),_ft.z),Math.min(1,dt*6));}
+  if(isF){const flap=ph==='fight'||ph==='land'||ph==='result';o.phase+=dt*(flap?18:6);
+    mesh.position.copy(o.pos);
+    if(ph==='land'||ph==='result')mesh.rotation.set(Math.sin(o.phase)*0.6,o.yaw,1.35);
+    else mesh.rotation.set(flap?Math.sin(o.phase*0.5)*0.4:0,o.yaw+Math.sin(o.phase)*0.08,FG.jumpT>0?0.8:0);
+    o.tail.rotation.y=Math.sin(o.phase)*(flap?0.8:0.4);}
+  else{mesh.position.copy(o.pos);mesh.rotation.set(ph==='land'||ph==='result'?Math.sin(T*14)*0.4:0,o.yaw,ph==='land'||ph==='result'?-1.2:0);
+    const u=o.m.material.userData.u;if(u){u.uPh.value+=dt*14;u.uAmp.value=0.5;u.uPl.value+=dt*30;u.uPlA.value=0.8;}}
+  return true;}
+/* 每格更新 */
+function updateFishing(dt){
+  // 阿福的姿勢
+  const ph=FG.phase,on=FG.on&&!HV.on;
+  AF.root.visible=!HV.on;
+  let pose,rodE=0.55,bend=0.03;
+  if(!on){pose={tz:-0.1,ty:0,shR:0.9,elR:0.9,abR:-0.05,shL:0.7,elL:1.1,abL:0.35,hipR:1.45,kneeR:-1.45,hipL:1.4,kneeL:-1.4,pelY:-0.46};rodE=0.9;}
+  else{const stand={tz:-0.05,ty:0,abR:-0.05,abL:0.35,hipR:0.08,kneeR:-0.12,hipL:-0.05,kneeL:-0.08,pelY:-0.02};
+    if(ph==='charge'){FG.power=Math.min(1,FG.power+dt*0.8);rodE=lerp(0.9,2.6,FG.power);pose=Object.assign({},stand,{shR:1.6+FG.power*0.8,elR:1.4,shL:1.3+FG.power*0.6,elL:1.5,ty:-0.4*FG.power,tz:0.1});
+      $('#fgPowBar').style.width=(FG.power*100).toFixed(0)+'%';}
+    else if(ph==='cast'){rodE=0.25;pose=Object.assign({},stand,{shR:1.1,elR:0.4,shL:0.9,elL:0.7,tz:-0.25,ty:0.25});}
+    else if(ph==='fight'){rodE=1.0+FG.tension*0.5;bend=0.12+FG.tension*0.38;const rl=FG.reeling?Math.sin(T*16)*0.2:0;
+      pose=Object.assign({},stand,{tz:0.12+FG.tension*0.15,shR:1.2+FG.tension*0.3,elR:0.9,shL:0.9+rl,elL:1.3-rl,hipR:0.2,kneeR:-0.25});}
+    else if(ph==='land'||ph==='result'){rodE=1.5;bend=0.25;pose=Object.assign({},stand,{shR:1.8,elR:0.6,shL:1.2,elL:1.2,tz:0.15});}
+    else{rodE=0.75;bend=ph==='bite'?0.18:0.05;pose=Object.assign({},stand,{shR:0.95,elR:0.8,shL:0.75,elL:1.1});}}
+  applyPose(AF,pose,Math.min(1,dt*(ph==='cast'?20:8)));
+  rod.rotation.z=lerp(rod.rotation.z,rodE,Math.min(1,dt*(ph==='cast'?18:6)));rodSegs[1].rotation.z=-bend;rodSegs[2].rotation.z=-bend*1.4;
+  if(!on){bobber.visible=fishLine.visible=leader.visible=false;return;}
+  if(HV.on){fgExit();return;}
+  raft.updateMatrixWorld(true);FG.tip.getWorldPosition(_ft);
+  // 浮標
+  if(ph==='cast'){FG.bobV.y-=9.8*dt;FG.bob.addScaledVector(FG.bobV,dt);const dd=Math.max(Math.abs(FG.bob.x),Math.abs(FG.bob.z));
+    if(dd>HV_SHORE-3){const k=(HV_SHORE-3)/dd;FG.bob.x*=k;FG.bob.z*=k;}
+    if(FG.bob.y<=WATER+0.02&&FG.bobV.y<0){FG.bob.y=WATER;FG.phase='wait';FG.waitT=0;FG.nextT=rand(1,2.5);sndPlop(FG.bob.x,FG.bob.z);ripple(FG.bob.x,FG.bob.z,0.5);
+      fgMsg(FG.target==='fish'?'浮標站好了，等虱目魚來咬餌…':'餌沉到池底了，等草蝦來吃…');fgBtnUI();}}
+  else if(ph==='wait'){FG.nextT-=dt;FG.waitT=(FG.waitT||0)+dt;
+    if(FG.nextT<=0){FG.nextT=rand(1,2.2);const isF=FG.target==='fish',list=isF?fishes:shrimps,rr=Math.min(40,(isF?16:14)+FG.waitT*2);let best=null,bd=rr*rr;
+      for(const o of list){if(isF&&o.jump)continue;const d=(o.pos.x-FG.bob.x)**2+(o.pos.z-FG.bob.z)**2;if(d<bd){bd=d;best=o;}}
+      if(best&&Math.random()<0.85){FG.ctrl=best;FG.isFish=isF;FG.phase='approach';FG.waitT=0;}}}
+  else if(ph==='nibble'){FG.nibT-=dt;
+    if(FG.nibT<=0){if(FG.nib>0){FG.nib--;FG.bobDip=FG.isFish?0.05:0.035;FG.nibT=rand(0.6,1.5);tone(0.04,1400,1100,0.05,'sine');fgMsg(FG.isFish?'浮標輕輕點了一下…別急':'浮標在抖…是草蝦在試探',false);}
+      else{FG.phase='bite';FG.biteT=FG.isFish?0.95:1.3;tone(0.09,520,300,0.18,'triangle');try{navigator.vibrate&&navigator.vibrate(60);}catch(e){}fgMsg(FG.isFish?'⚡ 浮標整個沉下去了！快提竿！':'⚡ 浮標被拖著走了！快提竿！');fgBtnUI();}}}
+  else if(ph==='bite'){FG.biteT-=dt;if(FG.biteT<=0)fgFail('慢了一步，餌被吃掉了…再拋一次');}
+  else if(ph==='fight'){const o=FG.ctrl;if(!o||!(FG.isFish?fishes:shrimps).includes(o)){fgFail('魚不見了');return;}
+    FG.surgeT-=dt;if(FG.surgeT<=0){if(FG.surge>0){FG.surge=0;FG.surgeT=rand(0.8,2.2);}else{FG.surge=FG.str*rand(0.7,1.2);FG.surgeT=rand(0.5,1.4);FG.angV=rand(-0.6,0.6);}}
+    FG.ang=clamp(FG.ang+(FG.surge>0?(FG.angV||0):-FG.ang*0.5)*dt,-1,1);
+    if(FG.isFish&&FG.jumpT<=0&&Math.random()<dt*0.12){FG.jumpT=0.7;splashRing(o.pos.x,o.pos.z,12,0.8);sndSplash(o.pos.x,o.pos.z,true);if(FG.reeling)FG.tension+=0.15;}
+    if(FG.jumpT>0){FG.jumpT-=dt;if(FG.jumpT<=0){splashRing(o.pos.x,o.pos.z,16,1);ripple(o.pos.x,o.pos.z,0.6);sndSplash(o.pos.x,o.pos.z,true);}}
+    let tgt;
+    if(FG.reeling){tgt=0.32+(FG.surge>0?FG.surge*0.75:0.08);FG.dist-=(FG.surge>0?0.35:1.5)*dt*(FG.isFish?1:1.2);}
+    else{tgt=FG.surge>0?FG.surge*0.32:0.06;FG.dist+=(FG.surge>0?1.1:0.12)*dt;}
+    FG.tension+=(tgt-FG.tension)*Math.min(1,dt*3.5);
+    FG.slackT=FG.tension<0.13?FG.slackT+dt:0;
+    FG.dist=Math.min(FG.dist,22);
+    const tens=$('#fgTenBar');tens.style.width=Math.min(100,FG.tension*100).toFixed(0)+'%';tens.style.background=FG.tension>0.85?'#d6362a':FG.tension>0.6?'#f2b33a':'#3fae6a';
+    $('#fgDist').textContent=`距離 ${Math.max(0,FG.dist).toFixed(1)} 公尺`;
+    FG.clickT-=dt;if(FG.reeling&&FG.clickT<0){FG.clickT=0.07;tone(0.02,2600,2500,0.012,'square');}
+    if(FG.tension>0.8&&Math.random()<dt*6)tone(0.03,1700+Math.random()*300,1500,0.08,'sine');
+    if(FG.tension>0.88){fgMsg('⚠️ 張力太大了！放開按鈕讓牠游一下',true);}else if(FG.slackT>1.0){fgMsg('⚠️ 線太鬆了，要收線！',true);}else if(FG.msgT<=0){fgMsg(FG.surge>0?'牠在衝！收慢一點…':'趁牠休息，快收線！');FG.msgT=0.6;}
+    FG.msgT-=dt;
+    if(FG.tension>=1){tone(0.15,300,80,0.2,'sawtooth');burst(0.2,3000,0.08,'highpass');fgFail('啪！線斷了…下次張力太高時要放開');return;}
+    if(FG.slackT>(FG.isFish?2.6:1.8)){fgFail('脫鉤了…線放太鬆，魚跑掉了');return;}
+    if(FG.dist<=1.3)fgLand();}
+  else if(ph==='land'){FG.landT+=dt;if(FG.landT>1.1)fgShowResult();}
+  // 浮標位置與魚線
+  if(FG.bobShow){
+    if(ph==='wait'||ph==='approach'||ph==='nibble'){FG.bobDip=Math.max(0,FG.bobDip-dt*0.3);FG.bob.y=WATER+0.01+0.015*Math.sin(T*2.2+FG.bob.x)-FG.bobDip;}
+    else if(ph==='bite'){FG.bob.y=WATER-(FG.isFish?0.22:0.1);if(!FG.isFish){FG.bob.x+=Math.sin(T*3)*dt*0.3;}}
+    else if((ph==='fight'||ph==='land'||ph==='result')&&FG.ctrl){FG.bob.lerp(_fc.set(FG.ctrl.pos.x,Math.max(FG.ctrl.pos.y+0.25,WATER-0.1),FG.ctrl.pos.z),Math.min(1,dt*8));if(ph!=='fight')FG.bob.copy(FG.ctrl.pos).y+=0.2;}
+    bobber.position.copy(FG.bob);bobber.rotation.z=ph==='bite'?0.6:Math.sin(T*1.7)*0.08;bobber.visible=ph!=='land'&&ph!=='result';
+    const end=(ph==='fight'||ph==='land'||ph==='result')&&FG.ctrl?FG.ctrl.pos:FG.bob;
+    const sag=ph==='fight'?(1-Math.min(1,FG.tension))*0.8:ph==='cast'?0.1:0.5;
+    const pa=lineGeo.attributes.position.array;
+    for(let i=0;i<=12;i++){const t=i/12;pa[i*3]=lerp(_ft.x,end.x,t);pa[i*3+2]=lerp(_ft.z,end.z,t);pa[i*3+1]=Math.max(lerp(_ft.y,end.y+(end===FG.bob?0.15:0),t)-Math.sin(t*Math.PI)*sag*Math.min(1,_ft.distanceTo(end)/6),Math.min(end.y,WATER)-0.02);}
+    lineGeo.attributes.position.needsUpdate=true;fishLine.visible=true;
+    if(ph==='wait'||ph==='approach'||ph==='nibble'||ph==='bite'){fgBait(_fb);const lp=leaderGeo.attributes.position.array;lp.set([FG.bob.x,FG.bob.y,FG.bob.z,_fb.x,_fb.y,_fb.z]);leaderGeo.attributes.position.needsUpdate=true;leader.visible=true;}else leader.visible=false;}
+  // 自動運鏡
+  if(FG.auto&&!cctvOn){fgAnglerPos(_fa);fgDir(_fd);let tg,r;
+    if(ph==='fight'||ph==='land'||ph==='result'){const o=FG.ctrl?FG.ctrl.pos:FG.bob;tg=_fc.set((_fa.x+o.x)/2,WATER+0.6,(_fa.z+o.z)/2);r=6.5+FG.dist*0.35;}
+    else if(FG.bobShow){tg=_fc.set((_fa.x*0.6+FG.bob.x*0.4),WATER+0.7,(_fa.z*0.6+FG.bob.z*0.4));r=7.5;}
+    else{tg=_fc.set(_fa.x+_fd.x*2.5,WATER+1.0,_fa.z+_fd.z*2.5);r=6.5;}
+    const th=Math.atan2(-_fd.x,-_fd.z)+0.45,k=1-Math.exp(-dt*2.5);cam.target.lerp(tg,k);cam.r=lerp(cam.r,r,k);cam.theta=angLerp(cam.theta,th,k);cam.phi=lerp(cam.phi,1.18,k);}
+}
 /* ---------- 模擬 ---------- */
 let S=18,DO=6.2,simAcc=0;
 function flowAt(x,z,out){
@@ -2093,7 +2338,7 @@ function animate(){
        _a.set(1.6,0.1+b.empty.length*0.035,rs.type==='fish'?0.32:-0.32);
        rs.bag.position.lerpVectors(rs.from,_a,k);rs.bag.position.y+=Math.sin(k*Math.PI)*0.4;rs.bag.scale.y=lerp(1,0.22,k);rs.bag.rotation.y=lerp(0.35,rand(-0.3,0.3)*0+0.1,k);
        if(rs.pt>=1.1){b.empty.push(rs.bag);rs.bag=null;rs.phase=null;updateFeedButtons();schools.forEach(s=>s.timer=0);}}}
-   rs.v=lerp(rs.v,rs.phase?0:rs.speed,Math.min(1,dt*1.2));rs.a+=rs.v*dt;
+   rs.v=lerp(rs.v,(rs.phase||FG.on)?0:rs.speed,Math.min(1,dt*1.2));rs.a+=rs.v*dt;
    const Rr=a=>14+3*Math.sin(2*a);
    const x=Rr(rs.a)*Math.cos(rs.a),z=Rr(rs.a)*Math.sin(rs.a);
    const nx=Rr(rs.a+0.01)*Math.cos(rs.a+0.01),nz=Rr(rs.a+0.01)*Math.sin(rs.a+0.01);
@@ -2104,11 +2349,11 @@ function animate(){
    P.root.position.z=lerp(P.root.position.z,rs.phase?-0.05:0.4,Math.min(1,dt*2));  // 撐篙時站到竹筏右側邊緣
    const sp=Math.sin(T*1.3);let pose;
    if(rs.phase==='throw'){const prev=rs.cyc;rs.cyc=(rs.cyc+dt/1.7)%1;pose=samplePose(THROW_KEYS,rs.cyc);if(prev<0.66&&rs.cyc>=0.66)releaseFeed();}
-   else if(rs.phase)pose=STAND_POSE;else pose=polePose(sp);
+   else if(rs.phase||FG.on)pose=STAND_POSE;else pose=polePose(sp);
    P.scoop.visible=rs.phase==='throw';
    applyPose(P,pose,Math.min(1,dt*(rs.phase==='throw'?14:5)));
    raft.updateMatrixWorld(true);
-   if(!rs.phase){P.J.hand[0].getWorldPosition(_a);
+   if(!rs.phase&&!FG.on){P.J.hand[0].getWorldPosition(_a);
      // 篙插在竹筏外側的池底，竹筏往前走時篙留在原地，往後斜到一定程度就拔起來往前重插
      if(!rs.plant){rs.plant=new V3();rs.poleB=new V3();rs.needPlant=true;}
      _b.copy(rs.plant);raft.worldToLocal(_b);
@@ -2130,6 +2375,7 @@ function animate(){
     _q.copy(s.t).sub(s.c);const d=_q.length();if(d>0.01)s.c.addScaledVector(_q,Math.min(1,s.speed*dt/d));
   }
   for(const f of fishes){
+    if(FG.ctrl===f&&fgDrive(f,dt))continue;
     if(f.jump){ // 躍出水面
       f.vel.y-=9.8*dt;f.pos.addScaledVector(f.vel,dt);
       const hs=Math.hypot(f.vel.x,f.vel.z);
@@ -2166,6 +2412,7 @@ function animate(){
 
   // 草蝦
   for(const s of shrimps){
+    if(FG.ctrl===s&&fgDrive(s,dt))continue;
     s.timer-=dt;
     if(s.timer<=0){
       if(HV.on){hvTarget(s.t);s.timer=rand(1,3);}
@@ -2252,7 +2499,7 @@ function animate(){
   const uw=!cctvOn&&camera.position.y<WATER-0.03&&Math.max(Math.abs(camera.position.x),Math.abs(camera.position.z))<52;
   if(uw!==isUnder){isUnder=uw;scene.fog=uw?uwFog:skyFog;scene.background.copy(uw?uwFog.color:skyFog.color);sky.visible=!uw;$('#uw').style.display=uw?'block':'none';}
 
-  updateLabels();updateRipples(dt);updateFollowBar();updateSound(dt);updateBirds(dt);updateHarvest(dt);updateTrack(dt);updateCCTV(dt);
+  updateLabels();updateRipples(dt);updateFollowBar();updateSound(dt);updateBirds(dt);updateHarvest(dt);updateFishing(dt);updateTrack(dt);updateCCTV(dt);
   if(cctvOn)renderCCTV();else renderer.render(scene,camera);
   updateBirdBoxes();
   if(wantShot){wantShot=false;takePhoto();}
