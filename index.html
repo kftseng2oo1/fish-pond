@@ -2184,6 +2184,8 @@ function updateFishing(dt){
     else if(ph==='result'){rodE=1.55;bend=0;pose=Object.assign({},stand,{shR:0.95,elR:1.05,abR:-0.32,shL:0.95,elL:1.05,abL:0.32,tz:0.05});}
     else{rodE=0.75;bend=ph==='bite'?0.18:0.05;pose=Object.assign({},stand,{shR:0.95,elR:0.8,shL:0.75,elL:1.1});}}
   applyPose(AF,pose,Math.min(1,dt*(ph==='cast'?20:8)));
+  // 站起來釣魚時往前走到竹筏邊，板凳留在腳後面；坐下時回到板凳上
+  {const tz=on?-0.6:-0.3;AF.root.position.z=lerp(AF.root.position.z,tz,Math.min(1,dt*3));if(Math.abs(AF.root.position.z-tz)>0.02){AF.cur.hipR=(AF.cur.hipR||0)+Math.sin(T*10)*0.02;}}
   rod.rotation.z=lerp(rod.rotation.z,rodE,Math.min(1,dt*(ph==='cast'?18:6)));rodSegs[1].rotation.z=-bend;rodSegs[2].rotation.z=-bend*1.4;
   if(!on){bobber.visible=fishLine.visible=leader.visible=false;return;}
   if(HV.on){fgExit();return;}
