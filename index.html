@@ -74,7 +74,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#cfe2ee;font-family:-a
 #moreMenu button{border:0;background:none;text-align:left;padding:10px 12px;border-radius:10px;font-size:14.5px;font-family:inherit;color:#13261f}
 #moreMenu button:active{background:#e2f0e9}
 #moreMenu button.on{color:#1f6b57;font-weight:700}
-#followBar{position:fixed;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top));padding:6px 6px 6px 12px;font-size:13px;display:none;align-items:center;gap:8px;white-space:nowrap;z-index:6}
+#followBar{position:fixed;left:auto;right:calc(10px + env(safe-area-inset-right));transform:none;top:calc(10px + env(safe-area-inset-top));max-width:calc(100% - 232px);padding:6px 6px 6px 12px;font-size:13px;display:none;align-items:center;gap:8px;white-space:nowrap;z-index:6}
 #followBar.show{display:flex}
 #followBar button{border:0;border-radius:14px;padding:5px 10px;background:#13261f;color:#fff;font-size:12.5px;font-family:inherit}
 #shot img{width:100%;max-height:62vh;object-fit:contain;background:#0d1a16;border-radius:10px;display:block;-webkit-touch-callout:default}
@@ -247,7 +247,7 @@ body.cctv #fgUI{display:none!important}
   <button id="bQual">✨ 畫質：高畫質</button>
   <button id="bGuide">📋 混養須知</button>
 </div>
-<div id="followBar" class="card">🎥 跟拍：<b id="fName"></b><button id="fX">✕ 結束</button></div>
+<div id="followBar" class="card">🎥 <b id="fName"></b><button id="fX">✕</button></div>
 <div id="shot" class="modal hide"><div class="sheet card"><img id="shotImg" alt="魚塭照片"><div class="tip">iPhone 也可以長按照片儲存</div><div class="row2"><button id="shotSave">📤 分享／儲存</button><button id="shotX" class="gray">關閉</button></div></div></div>
 <div id="flash"></div>
 <div id="stock" class="modal hide"><div class="sheet card"><h3>放養數量</h3><div id="stockRows"></div><div id="loadTxt" class="tip"></div>
@@ -369,7 +369,7 @@ const lamb=(c)=>new THREE.MeshLambertMaterial({color:c});
 const canvas=$('#c');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
-renderer.setSize(innerWidth,innerHeight);
+renderer.setSize(innerWidth,innerHeight,false);
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 const scene=new THREE.Scene();
@@ -1247,14 +1247,15 @@ let wantShot=false,shotBlob=null,shotUrl=null;
 $('#bPhoto').onclick=()=>{wantShot=true;};
 function takePhoto(){const src=renderer.domElement,c=document.createElement('canvas');c.width=src.width;c.height=src.height;const g=c.getContext('2d');g.drawImage(src,0,0);
   const d=new Date(),p2=n=>String(n).padStart(2,'0'),stamp=`${d.getFullYear()}/${p2(d.getMonth()+1)}/${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
-  const l1='🐟 故鄉魚塭 · '+stamp,l2=`${cctvOn?(ccSplit?'監視器四分割 · ':'監視器 CAM'+(ccCur+1)+' · '):''}鹽度 ${S.toFixed(1)}‰ · 溶氧 ${DO.toFixed(1)} mg/L · ${night?'夜間':'白天'} · 養殖戶 ${CHARS[charIdx].name}`;
+  const trophy=FG.on&&FG.result&&FG.photo;
+  const l1=trophy?`🎣 阿福釣到${FG.result.sp}！${FG.result.len} 公分・${FG.result.w} 公克`:'🐟 故鄉魚塭 · '+stamp,l2=trophy?`故鄉魚塭 釣魚體驗 · ${stamp}`:`${cctvOn?(ccSplit?'監視器四分割 · ':'監視器 CAM'+(ccCur+1)+' · '):''}鹽度 ${S.toFixed(1)}‰ · 溶氧 ${DO.toFixed(1)} mg/L · ${night?'夜間':'白天'} · 養殖戶 ${CHARS[charIdx].name}`;
   let fs=Math.round(Math.min(c.width,c.height)*0.04);const fnt=n=>`600 ${n}px -apple-system,"PingFang TC","Noto Sans TC",sans-serif`;g.font=fnt(fs);
   while(fs>8&&g.measureText(l1).width>c.width-fs*2){fs--;g.font=fnt(fs);}
   g.textBaseline='bottom';g.shadowColor='rgba(0,0,0,.7)';g.shadowBlur=fs*0.4;g.fillStyle='rgba(255,255,255,.95)';
   g.fillText(l1,fs*0.9,c.height-fs*0.8-fs*1.25);g.font=fnt(Math.round(fs*0.72));g.fillStyle='rgba(255,255,255,.85)';g.fillText(l2,fs*0.9,c.height-fs*0.8);
   const fl=$('#flash');fl.style.transition='none';fl.style.opacity=0.85;requestAnimationFrame(()=>{fl.style.transition='opacity .45s';fl.style.opacity=0;});sndShutter();
   c.toBlob(b=>{if(!b)return;shotBlob=b;if(shotUrl)URL.revokeObjectURL(shotUrl);shotUrl=URL.createObjectURL(b);$('#shotImg').src=shotUrl;openModal('shot');},'image/jpeg',0.92);}
-$('#shotX').onclick=()=>closeModal('shot');
+$('#shotX').onclick=()=>{closeModal('shot');if(typeof fgAfterShot==='function')fgAfterShot();};
 let dlNS=null;try{if(window.claude&&window.claude.use)window.claude.use('downloads').then(n=>{dlNS=n;}).catch(()=>{});}catch(e){}
 $('#shotSave').onclick=()=>{if(!shotBlob)return;const name='故鄉魚塭-'+Date.now()+'.jpg';
   if(dlNS){dlNS.save({filename:name,data:shotBlob}).then(r=>{if(r&&r.status==='saved')toast('照片已儲存');}).catch(e=>{if(!e||e.code!=='declined')toast('無法儲存，請長按照片儲存');});return;}
@@ -1289,7 +1290,7 @@ if(location.hash==='#kiosk'||/[?&]kiosk=1/.test(location.search))setTimeout(ente
 let quality='high',qUser=false;
 try{const q=localStorage.getItem('pond_quality');if(q==='high'||q==='low'){quality=q;qUser=true;}}catch(e){}
 const bQual=$('#bQual');
-function applyQuality(q,save){quality=q;renderer.setPixelRatio(q==='high'?Math.min(devicePixelRatio||1,2):Math.min(devicePixelRatio||1,1.25));renderer.setSize(innerWidth,innerHeight);
+function applyQuality(q,save){quality=q;renderer.setPixelRatio(q==='high'?Math.min(devicePixelRatio||1,2):Math.min(devicePixelRatio||1,1.25));renderer.setSize(canvas.clientWidth||innerWidth,canvas.clientHeight||innerHeight,false);
   sun.castShadow=q==='high';bQual.textContent='✨ 畫質：'+(q==='high'?'高畫質':'省電');if(save){qUser=true;try{localStorage.setItem('pond_quality',q);}catch(e){}}}
 bQual.onclick=()=>{applyQuality(quality==='high'?'low':'high',true);toast(quality==='high'?'高畫質：陰影、高解析度':'省電畫質：關閉陰影、降低解析度');};
 applyQuality(quality,false);
@@ -1381,7 +1382,7 @@ function updateCCTV(dt){
     if(!ccSplit){const c=cctvs[ccCur];const z=CC_FOV/c.tf;$('#ccZoomTxt').textContent='×'+z.toFixed(1);if(document.activeElement!==$('#ccZoom'))$('#ccZoom').value=z;}}
 }
 function renderCCTV(){
-  const w=innerWidth,h=innerHeight;
+  const w=vwW||innerWidth,h=vwH||innerHeight;
   if(ccSplit){
     renderer.setScissorTest(true);renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;
     for(let i=0;i<4;i++){const c=cctvs[i].cam,x=(i%2)*w/2,y=i<2?h/2:0;
@@ -2130,7 +2131,9 @@ function fgShowResult(){const o=FG.ctrl,isF=FG.isFish;
 function fgDecide(keep){if(!FG.result)return;FG.result.kept=keep;fgLog.list.push(FG.result);fgSave();fgCountUI();
   if(keep){FG.bucketN=(FG.bucketN||0)+1;toast(`🧺 ${FG.result.sp}放進阿福的水桶`);}else toast('🐟 放生了，謝謝你讓牠回家');
   fgRelease(keep);FG.result=null;closeModal('fgResult');FG.phase='idle';bobber.visible=fishLine.visible=leader.visible=false;FG.bobShow=false;fgMsg('再拋一竿吧！');fgBtnUI();}
-$('#fgKeep').onclick=()=>fgDecide(true);$('#fgFree').onclick=()=>fgDecide(false);$('#fgShot').onclick=()=>{closeModal('fgResult');wantShot=true;setTimeout(()=>openModal('fgResult'),900);};
+$('#fgKeep').onclick=()=>fgDecide(true);$('#fgFree').onclick=()=>fgDecide(false);$('#fgShot').onclick=()=>{FG.photo=true;closeModal('fgResult');setTimeout(()=>{wantShot=true;},700);};
+function fgAfterShot(){if(FG.on&&FG.phase==='result'&&FG.photo){FG.photo=false;openModal('fgResult');}}
+$('#shot').addEventListener('click',e=>{if(e.target.id==='shot')setTimeout(fgAfterShot,50);});
 function fgRenderLog(){const L=fgLog.list,fish=L.filter(r=>r.sp==='虱目魚'),sh=L.filter(r=>r.sp==='草蝦');
   const bf=fish.reduce((m,r)=>r.len>(m?m.len:0)?r:m,null),bs=sh.reduce((m,r)=>r.len>(m?m.len:0)?r:m,null);
   const ds=t=>{const d=new Date(t);return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;};
@@ -2153,13 +2156,15 @@ function fgDrive(o,dt){const isF=FG.isFish,mesh=isF?o.g:o.m,ph=FG.phase;
     o.pos.x+=(tx-o.pos.x)*Math.min(1,dt*5);o.pos.z+=(tz-o.pos.z)*Math.min(1,dt*5);o.pos.y+=(ty-o.pos.y)*Math.min(1,dt*(FG.jumpT>0?12:5));
     o.yaw=angLerp(o.yaw,Math.atan2(-dz,dx),Math.min(1,dt*5));
     if(isF&&Math.random()<dt*(FG.surge>0?3:0.8)){splash.spawn(o.pos.x,WATER+0.03,o.pos.z,rand(-0.5,0.5),rand(0.8,1.8),rand(-0.5,0.5),0.5);}}
-  else if(ph==='land'||ph==='result'){FG.tip.getWorldPosition(_ft);o.pos.lerp(_fc.set(_ft.x,_ft.y-(isF?0.55:0.3),_ft.z),Math.min(1,dt*6));}
+  else if(ph==='land'){FG.tip.getWorldPosition(_ft);o.pos.lerp(_fc.set(_ft.x,_ft.y-(isF?0.55:0.3),_ft.z),Math.min(1,dt*6));}
+  else if(ph==='result'){AF.root.localToWorld(_fc.set(0.4,isF?1.3:1.33,0));o.pos.lerp(_fc,Math.min(1,dt*5));fgDir(_fd);o.yaw=Math.atan2(-_fd.x,-_fd.z);}
   if(isF){const flap=ph==='fight'||ph==='land'||ph==='result';o.phase+=dt*(flap?18:6);
     mesh.position.copy(o.pos);
-    if(ph==='land'||ph==='result')mesh.rotation.set(Math.sin(o.phase)*0.6,o.yaw,1.35);
+    if(ph==='land')mesh.rotation.set(Math.sin(o.phase)*0.6,o.yaw,1.35);
+    else if(ph==='result')mesh.rotation.set(Math.sin(o.phase*0.3)*0.12,o.yaw,0.12+Math.sin(o.phase*0.5)*0.05);
     else mesh.rotation.set(flap?Math.sin(o.phase*0.5)*0.4:0,o.yaw+Math.sin(o.phase)*0.08,FG.jumpT>0?0.8:0);
     o.tail.rotation.y=Math.sin(o.phase)*(flap?0.8:0.4);}
-  else{mesh.position.copy(o.pos);mesh.rotation.set(ph==='land'||ph==='result'?Math.sin(T*14)*0.4:0,o.yaw,ph==='land'||ph==='result'?-1.2:0);
+  else{mesh.position.copy(o.pos);mesh.rotation.set(ph==='land'?Math.sin(T*14)*0.4:ph==='result'?Math.sin(T*6)*0.1:0,o.yaw,ph==='land'?-1.2:0);
     const u=o.m.material.userData.u;if(u){u.uPh.value+=dt*14;u.uAmp.value=0.5;u.uPl.value+=dt*30;u.uPlA.value=0.8;}}
   return true;}
 /* 每格更新 */
@@ -2175,7 +2180,8 @@ function updateFishing(dt){
     else if(ph==='cast'){rodE=0.25;pose=Object.assign({},stand,{shR:1.1,elR:0.4,shL:0.9,elL:0.7,tz:-0.25,ty:0.25});}
     else if(ph==='fight'){rodE=1.0+FG.tension*0.5;bend=0.12+FG.tension*0.38;const rl=FG.reeling?Math.sin(T*16)*0.2:0;
       pose=Object.assign({},stand,{tz:0.12+FG.tension*0.15,shR:1.2+FG.tension*0.3,elR:0.9,shL:0.9+rl,elL:1.3-rl,hipR:0.2,kneeR:-0.25});}
-    else if(ph==='land'||ph==='result'){rodE=1.5;bend=0.25;pose=Object.assign({},stand,{shR:1.8,elR:0.6,shL:1.2,elL:1.2,tz:0.15});}
+    else if(ph==='land'){rodE=1.5;bend=0.25;pose=Object.assign({},stand,{shR:1.8,elR:0.6,shL:1.2,elL:1.2,tz:0.15});}
+    else if(ph==='result'){rodE=1.55;bend=0;pose=Object.assign({},stand,{shR:0.95,elR:1.05,abR:-0.32,shL:0.95,elL:1.05,abL:0.32,tz:0.05});}
     else{rodE=0.75;bend=ph==='bite'?0.18:0.05;pose=Object.assign({},stand,{shR:0.95,elR:0.8,shL:0.75,elL:1.1});}}
   applyPose(AF,pose,Math.min(1,dt*(ph==='cast'?20:8)));
   rod.rotation.z=lerp(rod.rotation.z,rodE,Math.min(1,dt*(ph==='cast'?18:6)));rodSegs[1].rotation.z=-bend;rodSegs[2].rotation.z=-bend*1.4;
@@ -2222,13 +2228,17 @@ function updateFishing(dt){
     else if(ph==='bite'){FG.bob.y=WATER-(FG.isFish?0.22:0.1);if(!FG.isFish){FG.bob.x+=Math.sin(T*3)*dt*0.3;}}
     else if((ph==='fight'||ph==='land'||ph==='result')&&FG.ctrl){FG.bob.lerp(_fc.set(FG.ctrl.pos.x,Math.max(FG.ctrl.pos.y+0.25,WATER-0.1),FG.ctrl.pos.z),Math.min(1,dt*8));if(ph!=='fight')FG.bob.copy(FG.ctrl.pos).y+=0.2;}
     bobber.position.copy(FG.bob);bobber.rotation.z=ph==='bite'?0.6:Math.sin(T*1.7)*0.08;bobber.visible=ph!=='land'&&ph!=='result';
+    if(ph==='result'){fishLine.visible=false;leader.visible=false;}
     const end=(ph==='fight'||ph==='land'||ph==='result')&&FG.ctrl?FG.ctrl.pos:FG.bob;
     const sag=ph==='fight'?(1-Math.min(1,FG.tension))*0.8:ph==='cast'?0.1:0.5;
     const pa=lineGeo.attributes.position.array;
     for(let i=0;i<=12;i++){const t=i/12;pa[i*3]=lerp(_ft.x,end.x,t);pa[i*3+2]=lerp(_ft.z,end.z,t);pa[i*3+1]=Math.max(lerp(_ft.y,end.y+(end===FG.bob?0.15:0),t)-Math.sin(t*Math.PI)*sag*Math.min(1,_ft.distanceTo(end)/6),Math.min(end.y,WATER)-0.02);}
-    lineGeo.attributes.position.needsUpdate=true;fishLine.visible=true;
+    lineGeo.attributes.position.needsUpdate=true;fishLine.visible=ph!=='result';
     if(ph==='wait'||ph==='approach'||ph==='nibble'||ph==='bite'){fgBait(_fb);const lp=leaderGeo.attributes.position.array;lp.set([FG.bob.x,FG.bob.y,FG.bob.z,_fb.x,_fb.y,_fb.z]);leaderGeo.attributes.position.needsUpdate=true;leader.visible=true;}else leader.visible=false;}
   // 自動運鏡
+  if(ph==='result'&&!cctvOn&&FG.ctrl){fgDir(_fd);AF.root.localToWorld(_fb.set(0.4,1.3,0));   // 釣獲特寫：鏡頭到阿福正前方
+    const tg=_fc.set(_fb.x,_fb.y-(FG.photo?0.05:0.4),_fb.z),r=FG.photo?1.9:2.9,th=Math.atan2(_fd.x,_fd.z)+0.28,k=1-Math.exp(-dt*4);
+    cam.target.lerp(tg,k);cam.r=lerp(cam.r,r,k);cam.theta=angLerp(cam.theta,th,k);cam.phi=lerp(cam.phi,1.42,k);return;}
   if(FG.auto&&!cctvOn){fgAnglerPos(_fa);fgDir(_fd);let tg,r;
     if(ph==='fight'||ph==='land'||ph==='result'){const o=FG.ctrl?FG.ctrl.pos:FG.bob;tg=_fc.set((_fa.x+o.x)/2,WATER+0.6,(_fa.z+o.z)/2);r=6.5+FG.dist*0.35;}
     else if(FG.bobShow){tg=_fc.set((_fa.x*0.6+FG.bob.x*0.4),WATER+0.7,(_fa.z*0.6+FG.bob.z*0.4));r=7.5;}
@@ -2500,6 +2510,7 @@ function animate(){
   if(uw!==isUnder){isUnder=uw;scene.fog=uw?uwFog:skyFog;scene.background.copy(uw?uwFog.color:skyFog.color);sky.visible=!uw;$('#uw').style.display=uw?'block':'none';}
 
   updateLabels();updateRipples(dt);updateFollowBar();updateSound(dt);updateBirds(dt);updateHarvest(dt);updateFishing(dt);updateTrack(dt);updateCCTV(dt);
+  fitView();
   if(cctvOn)renderCCTV();else renderer.render(scene,camera);
   updateBirdBoxes();
   if(wantShot){wantShot=false;takePhoto();}
@@ -2508,7 +2519,8 @@ function animate(){
 
 function hideHint(){const h=$('#hint');if(h.style.opacity!=='0'){h.style.opacity='0';}}
 setTimeout(hideHint,6000);
-addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+let vwW=0,vwH=0;function fitView(){const w=canvas.clientWidth||innerWidth,h=canvas.clientHeight||innerHeight;if(w===vwW&&h===vwH)return;vwW=w;vwH=h;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false);}
+addEventListener('resize',fitView);if(window.visualViewport)visualViewport.addEventListener('resize',fitView);
 updateHUD();
 animate();
 })();
