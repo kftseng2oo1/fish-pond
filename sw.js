@@ -1,6 +1,6 @@
 // 故鄉魚塭 — service worker
 // 更新任何檔案後，把版本號 +1，使用者下次開啟就會拿到新版
-var CACHE = 'fish-pond-v12';
+var CACHE = 'fish-pond-v13';
 var FILES = [
   './',
   'index.html',

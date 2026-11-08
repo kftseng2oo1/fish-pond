@@ -176,6 +176,10 @@ body.cctv #fgUI{display:none!important}
 #fgBtn:active{transform:scale(.98)}
 @keyframes fgPulse{from{transform:scale(1)}to{transform:scale(1.04)}}
 #fgReel{border:0;border-radius:14px;padding:0 12px;background:#dfe7e3;color:#13261f;font-size:13px;font-family:inherit;display:none}
+.modal .sheet>*,#picker .sheet>*,#info>*{zoom:var(--tz,1)}
+.modal .sheet,#picker .sheet,#info{touch-action:pan-y}
+#info{max-height:62vh;overflow:auto}
+.zoomtip{font-size:11.5px;color:#7a8f88;text-align:right;margin:-4px 0 4px}
 #err{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:30px;text-align:center}
 @media (max-width:420px){#hud{width:172px;font-size:12px}#hint{top:auto;bottom:calc(110px + env(safe-area-inset-bottom))}}
 </style>
@@ -253,7 +257,7 @@ body.cctv #fgUI{display:none!important}
 <div id="stock" class="modal hide"><div class="sheet card"><h3>放養數量</h3><div id="stockRows"></div><div id="loadTxt" class="tip"></div>
   <div id="realTxt" class="tip"></div>
   <div class="tip">畫面上 1 尾虱目魚約代表實際 350 尾；草蝦、文蛤的數量各場差異大，畫面上只是示意。放得越多，池水溶氧越低（左上角可看）。</div><button class="done" id="stockDone">完成</button></div></div>
-<div id="guide" class="modal hide"><div class="sheet card guide"><h3>📋 虱目魚・草蝦・文蛤混養須知</h3>
+<div id="guide" class="modal hide"><div class="sheet card guide"><h3>📋 虱目魚・草蝦・文蛤混養須知</h3><div class="zoomtip">👌 雙指可以放大縮小文字</div>
   <h4>分層分工</h4><ul><li>虱目魚在中上層活動，吃浮性飼料和池中藻類。</li><li>草蝦在池底爬行，吃沉性飼料和殘餌，白天多躲著，晚上較活躍。</li><li>文蛤埋在底泥裡濾食浮游藻類，有助穩定水色。</li></ul>
   <h4>鹽度</h4><ul><li>虱目魚是廣鹽性魚，淡水到海水都能活；草蝦、文蛤偏好半鹹水。</li><li>用海水閘門和淡水抽水慢慢調整，避免一次變動太大。</li><li>大雨、颱風後鹽度會突然下降，要特別留意。</li></ul>
   <h4>溶氧與水車</h4><ul><li>夜間到清晨藻類也在耗氧，是一天中溶氧最低的時候，夜裡一定要開水車。</li><li>悶熱、陰天、無風時更容易缺氧。</li><li>魚群浮到水面張嘴（浮頭）是缺氧警訊，要立刻增氧。</li></ul>
@@ -2260,6 +2264,19 @@ function updateFishing(dt){
     else{tg=_fc.set(_fa.x+_fd.x*2.5,WATER+1.0,_fa.z+_fd.z*2.5);r=6.5;}
     const th=Math.atan2(-_fd.x,-_fd.z)+0.45,k=1-Math.exp(-dt*2.5);cam.target.lerp(tg,k);cam.r=lerp(cam.r,r,k);cam.theta=angLerp(cam.theta,th,k);cam.phi=lerp(cam.phi,1.18,k);}
 }
+
+/* ---------- 說明視窗：雙指縮放文字 ---------- */
+let textZoom=1;try{textZoom=clamp(+localStorage.getItem('pond_textzoom')||1,0.85,2.4);}catch(e){}
+function applyTZ(save){document.documentElement.style.setProperty('--tz',textZoom.toFixed(3));if(save){try{localStorage.setItem('pond_textzoom',textZoom.toFixed(3));}catch(e){}}}
+applyTZ(false);
+document.querySelectorAll('.modal .sheet,#picker .sheet,#info').forEach(el=>{let d0=0,z0=1;
+  const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
+  el.addEventListener('touchstart',e=>{if(e.touches.length===2){d0=dist(e.touches);z0=textZoom;}},{passive:true});
+  el.addEventListener('touchmove',e=>{if(e.touches.length===2&&d0>0){e.preventDefault();textZoom=clamp(z0*dist(e.touches)/d0,0.85,2.4);applyTZ(false);}},{passive:false});
+  const end=e=>{if(d0&&e.touches.length<2){d0=0;applyTZ(true);}};
+  el.addEventListener('touchend',end);el.addEventListener('touchcancel',end);
+  el.addEventListener('gesturestart',e=>e.preventDefault());el.addEventListener('gesturechange',e=>e.preventDefault());
+  el.addEventListener('wheel',e=>{if(e.ctrlKey){e.preventDefault();textZoom=clamp(textZoom*(1-e.deltaY*0.01),0.85,2.4);applyTZ(true);}},{passive:false});});
 /* ---------- 模擬 ---------- */
 let S=18,DO=6.2,simAcc=0;
 function flowAt(x,z,out){
