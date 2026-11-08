@@ -2053,6 +2053,14 @@ const AF=buildPerson(AFU_CH);AF.root.userData={key:'angler',movable:true};AF.roo
  tb.position.set(0.85,0.09,-0.45);tb.castShadow=true;raft.add(tb);
  FG.bucket=bk;}
 const rod=new THREE.Group();rod.position.set(0.32,1.02,0.2);AF.root.add(rod);
+const ROD_HAND=new V3(0.32,1.02,0.2),ROD_DOWN=new V3(0.05,0.04,0.42),FG_HOLD_Y=1.18;
+// 兩節手臂 IK：讓手（掌心中央）到達阿福身體座標裡的目標點；肩膀繞 x 軸張開、繞 z 軸前後擺，手肘只往前彎
+function fgArmIK(sz,tx,ty,tz,pelY){const shY=0.9+pelY+0.04+0.465,L1=0.28,L2=0.29;
+  const X=tx,Ty=ty-shY,Tz=tz-sz,ab=Math.atan2(-Tz,-Ty),q=Math.hypot(Ty,Tz);
+  const D=Math.min(L1+L2-0.001,Math.max(Math.abs(L1-L2)+0.001,Math.hypot(X,q)));
+  const el=Math.acos(clamp((D*D-L1*L1-L2*L2)/(2*L1*L2),-1,1));
+  const sh=Math.atan2(X,q)-Math.atan2(L2*Math.sin(el),L1+L2*Math.cos(el));
+  return {ab,sh,el};}
 const rodSegs=[];{let parent=rod;const L=[0.95,0.85,0.75],R=[0.016,0.011,0.007];
   for(let i=0;i<3;i++){const g=new THREE.Group();if(i)g.position.x=L[i-1];parent.add(g);
     const m=new THREE.Mesh(new THREE.CylinderGeometry(R[i]*0.75,R[i],L[i],6).rotateZ(-Math.PI/2).translate(L[i]/2,0,0),lamb(i===0?0x2a2a2a:0x404850));g.add(m);rodSegs.push(g);parent=g;}
@@ -2157,7 +2165,7 @@ function fgDrive(o,dt){const isF=FG.isFish,mesh=isF?o.g:o.m,ph=FG.phase;
     o.yaw=angLerp(o.yaw,Math.atan2(-dz,dx),Math.min(1,dt*5));
     if(isF&&Math.random()<dt*(FG.surge>0?3:0.8)){splash.spawn(o.pos.x,WATER+0.03,o.pos.z,rand(-0.5,0.5),rand(0.8,1.8),rand(-0.5,0.5),0.5);}}
   else if(ph==='land'){FG.tip.getWorldPosition(_ft);o.pos.lerp(_fc.set(_ft.x,_ft.y-(isF?0.55:0.3),_ft.z),Math.min(1,dt*6));}
-  else if(ph==='result'){AF.root.localToWorld(_fc.set(0.4,isF?1.3:1.33,0));o.pos.lerp(_fc,Math.min(1,dt*5));fgDir(_fd);o.yaw=Math.atan2(-_fd.x,-_fd.z);}
+  else if(ph==='result'){AF.root.localToWorld(_fc.set(0.42,FG_HOLD_Y,0));o.pos.lerp(_fc,Math.min(1,dt*5));fgDir(_fd);o.yaw=Math.atan2(-_fd.x,-_fd.z);}
   if(isF){const flap=ph==='fight'||ph==='land'||ph==='result';o.phase+=dt*(flap?18:6);
     mesh.position.copy(o.pos);
     if(ph==='land')mesh.rotation.set(Math.sin(o.phase)*0.6,o.yaw,1.35);
@@ -2181,12 +2189,16 @@ function updateFishing(dt){
     else if(ph==='fight'){rodE=1.0+FG.tension*0.5;bend=0.12+FG.tension*0.38;const rl=FG.reeling?Math.sin(T*16)*0.2:0;
       pose=Object.assign({},stand,{tz:0.12+FG.tension*0.15,shR:1.2+FG.tension*0.3,elR:0.9,shL:0.9+rl,elL:1.3-rl,hipR:0.2,kneeR:-0.25});}
     else if(ph==='land'){rodE=1.5;bend=0.25;pose=Object.assign({},stand,{shR:1.8,elR:0.6,shL:1.2,elL:1.2,tz:0.15});}
-    else if(ph==='result'){rodE=1.55;bend=0;pose=Object.assign({},stand,{shR:0.95,elR:1.05,abR:-0.32,shL:0.95,elL:1.05,abL:0.32,tz:0.05});}
+    else if(ph==='result'){rodE=0.03;bend=0;const o=FG.ctrl,sc=o?(FG.isFish?o.s0:o.s0*0.55):1,hh=(FG.isFish?0.09:0.06)*sc;
+      pose=Object.assign({},stand,{tz:0,ty:0,pelY:-0.02});
+      const R=fgArmIK(0.172,0.48,FG_HOLD_Y+hh+0.012,0.1,pose.pelY),L=fgArmIK(-0.172,0.48,FG_HOLD_Y-hh-0.025,-0.18,pose.pelY);
+      Object.assign(pose,{abR:R.ab,shR:R.sh,elR:R.el,abL:L.ab,shL:L.sh,elL:L.el});}
     else{rodE=0.75;bend=ph==='bite'?0.18:0.05;pose=Object.assign({},stand,{shR:0.95,elR:0.8,shL:0.75,elL:1.1});}}
   applyPose(AF,pose,Math.min(1,dt*(ph==='cast'?20:8)));
   // 站起來釣魚時往前走到竹筏邊，板凳留在腳後面；坐下時回到板凳上
   {const tz=on?-0.6:-0.3;AF.root.position.z=lerp(AF.root.position.z,tz,Math.min(1,dt*3));if(Math.abs(AF.root.position.z-tz)>0.02){AF.cur.hipR=(AF.cur.hipR||0)+Math.sin(T*10)*0.02;}}
-  rod.rotation.z=lerp(rod.rotation.z,rodE,Math.min(1,dt*(ph==='cast'?18:6)));rodSegs[1].rotation.z=-bend;rodSegs[2].rotation.z=-bend*1.4;
+  {const down=on&&ph==='result',kk=Math.min(1,dt*6);rod.position.lerp(down?ROD_DOWN:ROD_HAND,kk);rod.rotation.y=lerp(rod.rotation.y,down?2.55:0,kk);
+   rod.rotation.z=lerp(rod.rotation.z,rodE,Math.min(1,dt*(ph==='cast'?18:6)));}rodSegs[1].rotation.z=-bend;rodSegs[2].rotation.z=-bend*1.4;
   if(!on){bobber.visible=fishLine.visible=leader.visible=false;return;}
   if(HV.on){fgExit();return;}
   raft.updateMatrixWorld(true);FG.tip.getWorldPosition(_ft);
@@ -2238,8 +2250,8 @@ function updateFishing(dt){
     lineGeo.attributes.position.needsUpdate=true;fishLine.visible=ph!=='result';
     if(ph==='wait'||ph==='approach'||ph==='nibble'||ph==='bite'){fgBait(_fb);const lp=leaderGeo.attributes.position.array;lp.set([FG.bob.x,FG.bob.y,FG.bob.z,_fb.x,_fb.y,_fb.z]);leaderGeo.attributes.position.needsUpdate=true;leader.visible=true;}else leader.visible=false;}
   // 自動運鏡
-  if(ph==='result'&&!cctvOn&&FG.ctrl){fgDir(_fd);AF.root.localToWorld(_fb.set(0.4,1.3,0));   // 釣獲特寫：鏡頭到阿福正前方
-    const tg=_fc.set(_fb.x,_fb.y-(FG.photo?0.05:0.4),_fb.z),r=FG.photo?1.9:2.9,th=Math.atan2(_fd.x,_fd.z)+0.28,k=1-Math.exp(-dt*4);
+  if(ph==='result'&&!cctvOn&&FG.ctrl){fgDir(_fd);AF.root.localToWorld(_fb.set(0.42,FG_HOLD_Y,0));   // 釣獲特寫：鏡頭到阿福正前方
+    const tg=_fc.set(_fb.x,_fb.y+(FG.photo?0.08:-0.28),_fb.z),r=FG.photo?1.9:2.9,th=Math.atan2(_fd.x,_fd.z)+0.28,k=1-Math.exp(-dt*4);
     cam.target.lerp(tg,k);cam.r=lerp(cam.r,r,k);cam.theta=angLerp(cam.theta,th,k);cam.phi=lerp(cam.phi,1.42,k);return;}
   if(FG.auto&&!cctvOn){fgAnglerPos(_fa);fgDir(_fd);let tg,r;
     if(ph==='fight'||ph==='land'||ph==='result'){const o=FG.ctrl?FG.ctrl.pos:FG.bob;tg=_fc.set((_fa.x+o.x)/2,WATER+0.6,(_fa.z+o.z)/2);r=6.5+FG.dist*0.35;}
